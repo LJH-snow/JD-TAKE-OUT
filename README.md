@@ -43,7 +43,7 @@ JD-take-out/
 - **代码规范**: ESLint
 
 ### 数据库设计
-- **数据库**: MySQL
+- **数据库**: PGSQL
 - **主要数据表**:
   - `user` - 用户信息
   - `employee` - 员工信息
@@ -65,7 +65,7 @@ JD-take-out/
 
 1. **克隆项目**
 ```bash
-git clone https://github.com/yourusername/JD-take-out.git
+git clone https://github.com/LJH-snow/JD-TAKE-OUT.git
 cd JD-take-out
 ```
 
