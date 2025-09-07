@@ -122,3 +122,60 @@ mvnw*
 config/local.json
 application-local.yml
 application-local.properties
+
+# 可执行文件
+*.exe
+*.dll
+*.so
+*.dylib
+
+# 测试输出
+*.test
+*.out
+
+# Go工作空间文件
+go.work
+
+# 环境变量文件
+.env
+*.env
+
+# 日志文件
+*.log
+
+# 临时文件
+*.tmp
+*.temp
+
+# IDE文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 依赖目录
+node_modules/
+
+# 构建输出
+dist/
+build/
+
+# 测试覆盖率报告
+coverage.txt
+*.cover
+
+# 数据库文件
+*.db
+*.sqlite
+
+# 临时测试文件
+test_*.json
+login.json
+
+# Air热重载缓存
+tmp/
