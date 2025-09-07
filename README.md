@@ -1,59 +1,6 @@
-- **数据库**: PGSQL
->>>>>>> ccb75e00082dace1cc0926543096dbd42ed84cd6
-- **主要数据表**:
-  - `user` - 用户信息
-  - `employee` - 员工信息
-  - `category` - 菜品分类
-  - `dish` - 菜品信息
-  - `setmeal` - 套餐信息
-  - `orders` - 订单信息
-  - `shopping_cart` - 购物车
-  - `address_book` - 地址簿
-
-## 🚀 快速开始
-
-### 环境要求
-- Node.js >= 16.0.0
-- npm >= 8.0.0
-- MySQL >= 8.0
-
-### 安装与运行
-
-1. **克隆项目**
-```bash
-<<<<<<< HEAD
-git clone https://github.com/yourusername/JD-take-out.git
-git clone https://github.com/LJH-snow/JD-TAKE-OUT.git
->>>>>>> ccb75e00082dace1cc0926543096dbd42ed84cd6
-cd JD-take-out
-```
-
-2. **启动用户端**
-```bash
-cd frontend-user
-npm install
-npm run dev
-```
-用户端将在 http://localhost:5173 启动
-
-3. **启动管理端**
-```bash
-cd frontend-admin
-npm install
-npm run dev
-```
-管理端将在 http://localhost:5174 启动
-
-4. **数据库初始化**
-```sql
--- 创建数据库
-CREATE DATABASE sky_take_out;
-
--- 执行项目指导/数据库脚本.txt 中的建表语句
-```
 # 🍜 JD外卖系统
 
-一个基于现代技术栈开发的外卖平台系统，包含用户端、管理端前端应用和后端API服务。
+一个基于现代技术栈开发的完整外卖平台系统，包含用户端、管理端前端应用和后端API服务。
 
 ## 📋 项目简介
 
@@ -271,111 +218,6 @@ npm run lint
 - 后端API: `http://localhost:8090`
 - 用户端: `http://localhost:5173`
 - 管理端: `http://localhost:5174`
-=======
-- **数据库**: PGSQL
->>>>>>> ccb75e00082dace1cc0926543096dbd42ed84cd6
-- **主要数据表**:
-  - `user` - 用户信息
-  - `employee` - 员工信息
-  - `category` - 菜品分类
-  - `dish` - 菜品信息
-  - `setmeal` - 套餐信息
-  - `orders` - 订单信息
-  - `shopping_cart` - 购物车
-  - `address_book` - 地址簿
-
-## 🚀 快速开始
-
-### 环境要求
-- Node.js >= 16.0.0
-- npm >= 8.0.0
-- MySQL >= 8.0
-
-### 安装与运行
-
-1. **克隆项目**
-```bash
-<<<<<<< HEAD
-git clone https://github.com/yourusername/JD-take-out.git
-=======
-git clone https://github.com/LJH-snow/JD-TAKE-OUT.git
->>>>>>> ccb75e00082dace1cc0926543096dbd42ed84cd6
-cd JD-take-out
-```
-
-2. **启动用户端**
-```bash
-cd frontend-user
-npm install
-npm run dev
-```
-用户端将在 http://localhost:5173 启动
-
-3. **启动管理端**
-```bash
-cd frontend-admin
-npm install
-npm run dev
-```
-管理端将在 http://localhost:5174 启动
-
-4. **数据库初始化**
-```sql
--- 创建数据库
-CREATE DATABASE sky_take_out;
-
--- 执行项目指导/数据库脚本.txt 中的建表语句
-```
-
-## 📁 项目结构
-
-### 用户端 (frontend-user)
-```
-frontend-user/
-├── src/
-│   ├── App.jsx              # 主应用组件
-│   ├── App.css             # 应用样式
-│   ├── main.jsx            # 应用入口
-│   └── index.css           # 全局样式
-├── public/                 # 静态资源
-└── package.json           # 项目配置
-```
-
-### 管理端 (frontend-admin)
-```
-frontend-admin/
-├── src/
-│   ├── App.jsx              # 主应用组件
-│   ├── App.css             # 应用样式
-│   ├── main.jsx            # 应用入口
-│   └── index.css           # 全局样式
-├── public/                 # 静态资源
-└── package.json           # 项目配置
-```
-
-## 📚 开发指南
-
-### 可用脚本
-
-在各个前端项目目录下：
-
-```bash
-# 启动开发服务器
-npm run dev
-
-# 构建生产版本
-npm run build
-
-# 代码检查
-npm run lint
-
-# 预览构建结果
-npm run preview
-```
-
-### 端口配置
-- 用户端: `http://localhost:5173`
-- 管理端: `http://localhost:5174`
 
 ## 🎯 开发规划
 
@@ -403,10 +245,11 @@ npm run preview
 ## 📖 相关文档
 
 项目包含以下指导文档：
-- 数据库设计文档
-- 支付宝沙箱与Cpolar入门指南
+- 数据库设计文档 (PostgreSQL脚本)
+- ECharts图表设计方案
 - 高德地图API集成指南
-- 课程设计报告模板
+- 完整统计系统设计文档
+- 开发环境搭建指南
 
 ## 🤝 贡献指南
 
@@ -420,13 +263,6 @@ npm run preview
 
 本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
 
-- 项目地址: [GitHub Repository](https://github.com/LJH-snow/JD-TAKE-OUT)
-- 问题反馈: [Issues](https://github.com/LJH-snow/JD-TAKE-OUT/issues)
-
----
-
-```
->>>>>>> ccb75e00082dace1cc0926543096dbd42ed84cd6
 ## 📞 联系方式
 
 如有问题或建议，请通过以下方式联系：
@@ -437,11 +273,3 @@ npm run preview
 ---
 
 ⭐ 项目已具备生产就绪的基础能力，欢迎Star支持！
-=======
-- 项目地址: [GitHub Repository](https://github.com/LJH-snow/JD-TAKE-OUT)
-- 问题反馈: [Issues](https://github.com/LJH-snow/JD-TAKE-OUT/issues)
-
----
-
-⭐ 如果这个项目对你有帮助，请给个 Star 支持一下！
->>>>>>> ccb75e00082dace1cc0926543096dbd42ed84cd6
