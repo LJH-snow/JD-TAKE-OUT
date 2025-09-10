@@ -1,0 +1,374 @@
+definitions:
+  controllers.LoginRequest:
+    properties:
+      password:
+        type: string
+      user_type:
+        description: admin(管理员) 或 user(用户)
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  controllers.RegisterRequest:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      phone:
+        type: string
+      username:
+        type: string
+    required:
+    - name
+    - password
+    - phone
+    - username
+    type: object
+host: localhost:8090
+info:
+  contact:
+    email: support@jd-takeout.com
+    name: JD外卖开发团队
+  description: |-
+    基于Golang + Gin + PostgreSQL的完整外卖平台API接口文档
+    提供用户认证、统计分析、订单管理等核心功能
+  title: JD外卖系统API
+  version: "1.0"
+paths:
+  /api/v1/admin/dashboard/overview:
+    get:
+      consumes:
+      - application/json
+      description: 获取当日营业数据概览，包括营业额、订单量、完成率等关键指标
+      parameters:
+      - default: 当前日期
+        description: '开始日期 (格式: 2006-01-02)'
+        in: query
+        name: start
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 未授权
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取工作台概览数据
+      tags:
+      - 统计
+  /api/v1/admin/export/data:
+    post:
+      consumes:
+      - application/json
+      description: 导出系统数据为Excel文件
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 未授权
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 导出数据
+      tags:
+      - 统计
+  /api/v1/admin/stats/categories:
+    get:
+      consumes:
+      - application/json
+      description: 获取指定时间范围内的菜品分类销售统计，包括营业额、销量、占比等
+      parameters:
+      - description: '开始日期 (格式: 2006-01-02)'
+        in: query
+        name: start
+        required: true
+        type: string
+      - description: '结束日期 (格式: 2006-01-02)'
+        in: query
+        name: end
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 未授权
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取分类统计数据
+      tags:
+      - 统计
+  /api/v1/admin/stats/dishes:
+    get:
+      consumes:
+      - application/json
+      description: 获取指定时间范围内的菜品销售排行，支持按分类过滤
+      parameters:
+      - description: '开始日期 (格式: 2006-01-02)'
+        in: query
+        name: start
+        required: true
+        type: string
+      - description: '结束日期 (格式: 2006-01-02)'
+        in: query
+        name: end
+        required: true
+        type: string
+      - default: all
+        description: '分类名称 (默认: all)'
+        in: query
+        name: category
+        type: string
+      - default: 10
+        description: '返回数量 (默认: 10)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 未授权
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取菜品排行数据
+      tags:
+      - 统计
+  /api/v1/admin/stats/sales:
+    get:
+      consumes:
+      - application/json
+      description: 获取指定时间范围内的销售趋势数据，包括日均营业额、订单量、客户数等
+      parameters:
+      - description: '开始日期 (格式: 2006-01-02)'
+        in: query
+        name: start
+        required: true
+        type: string
+      - description: '结束日期 (格式: 2006-01-02)'
+        in: query
+        name: end
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 未授权
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取销售趋势数据
+      tags:
+      - 统计
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: 支持管理员和普通用户登录，返回JWT Token
+      parameters:
+      - description: 登录请求参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登录成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 认证失败
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 用户登录
+      tags:
+      - 认证
+  /api/v1/auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: 刷新JWT Token，延长登录状态
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 令牌刷新成功
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 令牌无效或过期
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 刷新令牌
+      tags:
+      - 认证
+  /api/v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: 普通用户注册账号，支持手机号注册
+      parameters:
+      - description: 注册请求参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 注册成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: 用户已存在
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 用户注册
+      tags:
+      - 认证
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: 检查系统服务状态，返回服务器运行情况
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 服务正常
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 系统健康检查
+      tags:
+      - 健康检查
+securityDefinitions:
+  BearerAuth:
+    description: 'JWT Token (格式: Bearer {token})'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
