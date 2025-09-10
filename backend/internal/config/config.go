@@ -67,7 +67,7 @@ func LoadConfig() (*Config, error) {
 
 func setDefaults() {
 	// 服务器配置
-	viper.SetDefault("server.port", "8080")
+	viper.SetDefault("server.port", "8090")
 	viper.SetDefault("server.mode", "debug")
 
 	// 数据库配置

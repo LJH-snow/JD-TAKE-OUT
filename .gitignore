@@ -179,3 +179,11 @@ login.json
 
 # Air热重载缓存
 tmp/
+
+# Go specific build artifacts and logs
+backend/tmp/
+backend/build-errors.log
+*.prof
+
+# Air root config
+air.toml

@@ -13,6 +13,20 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Ensuring full height for centering to work reliably */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  /* display: flex; and place-items: center; are removed from here */
+  /* to allow component-level centering without conflict. */
+}
+
 a {
   font-weight: 500;
   color: #646cff;
@@ -20,14 +34,6 @@ a {
 }
 a:hover {
   color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
 }
 
 h1 {
@@ -65,4 +71,63 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+/* Custom Dashboard Styles */
+.stats-card {
+  border-radius: 12px !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+  color: white !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.stats-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+}
+
+.stats-card .ant-statistic-title {
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-size: 16px !important;
+  z-index: 1;
+}
+
+.stats-card .ant-statistic-content {
+  color: white !important;
+  font-size: 30px !important;
+  font-weight: 600 !important;
+  z-index: 1;
+}
+
+.stats-card-icon {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 42px;
+  opacity: 0.2;
+  z-index: 0;
+}
+
+.card-revenue {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.card-orders {
+  background: linear-gradient(135deg, #38ef7d 0%, #11998e 100%);
+}
+
+.card-completion {
+  background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);
+}
+
+.card-price {
+  background: linear-gradient(135deg, #2af598 0%, #009efd 100%);
+}
+
+.card-users {
+  background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%);
 }

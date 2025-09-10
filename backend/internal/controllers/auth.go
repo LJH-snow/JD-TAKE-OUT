@@ -36,6 +36,18 @@ type RegisterRequest struct {
 }
 
 // Login 用户登录
+//
+//	@Summary		用户登录
+//	@Description	支持管理员和普通用户登录，返回JWT Token
+//	@Tags			认证
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body	LoginRequest	true	"登录请求参数"
+//	@Success		200	{object}	map[string]interface{}	"登录成功"
+//	@Failure		400	{object}	map[string]interface{}	"请求参数错误"
+//	@Failure		401	{object}	map[string]interface{}	"认证失败"
+//	@Failure		500	{object}	map[string]interface{}	"服务器错误"
+//	@Router			/api/v1/auth/login [post]
 func (ac *AuthController) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -170,6 +182,18 @@ func (ac *AuthController) userLogin(c *gin.Context, req LoginRequest) {
 }
 
 // Register 用户注册
+//
+//	@Summary		用户注册
+//	@Description	普通用户注册账号，支持手机号注册
+//	@Tags			认证
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body	RegisterRequest	true	"注册请求参数"
+//	@Success		200	{object}	map[string]interface{}	"注册成功"
+//	@Failure		400	{object}	map[string]interface{}	"请求参数错误"
+//	@Failure		409	{object}	map[string]interface{}	"用户已存在"
+//	@Failure		500	{object}	map[string]interface{}	"服务器错误"
+//	@Router			/api/v1/auth/register [post]
 func (ac *AuthController) Register(c *gin.Context) {
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -228,6 +252,17 @@ func (ac *AuthController) Register(c *gin.Context) {
 }
 
 // RefreshToken 刷新令牌
+//
+//	@Summary		刷新令牌
+//	@Description	刷新JWT Token，延长登录状态
+//	@Tags			认证
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{object}	map[string]interface{}	"令牌刷新成功"
+//	@Failure		401	{object}	map[string]interface{}	"令牌无效或过期"
+//	@Failure		500	{object}	map[string]interface{}	"服务器错误"
+//	@Router			/api/v1/auth/refresh [post]
 func (ac *AuthController) RefreshToken(c *gin.Context) {
 	// 从请求头获取当前的Token
 	authHeader := c.GetHeader("Authorization")
@@ -264,6 +299,61 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 		"message": "令牌刷新成功",
 		"data": gin.H{
 			"token": newToken,
+		},
+	})
+}
+
+// GetCurrentUser 获取当前登录用户信息
+// @Summary      获取当前用户信息
+// @Description  根据提供的JWT令牌获取当前登录用户（管理员）的信息
+// @Tags         认证
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  map[string]interface{}  "获取成功"
+// @Failure      401  {object}  map[string]interface{}  "认证失败"
+// @Failure      403  {object}  map[string]interface{}  "权限不足"
+// @Router       /api/v1/admin/me [get]
+func (ac *AuthController) GetCurrentUser(c *gin.Context) {
+	claims, exists := c.Get("claims")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"code":    401,
+			"message": "无效的认证令牌",
+		})
+		return
+	}
+
+	userClaims, ok := claims.(*utils.Claims)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"code":    401,
+			"message": "认证令牌格式错误",
+		})
+		return
+	}
+
+	// 在管理后台，我们只关心管理员角色
+	if userClaims.Role != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"code": 403, "message": "权限不足"})
+		return
+	}
+
+	var employee models.Employee
+	err := ac.DB.First(&employee, userClaims.UserID).Error
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "用户不存在"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"message": "验证成功",
+		"data": gin.H{
+			"id":       employee.ID,
+			"username": employee.Username,
+			"name":     employee.Name,
+			"role":     userClaims.Role,
 		},
 	})
 }
