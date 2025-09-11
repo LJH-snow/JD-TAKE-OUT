@@ -13,9 +13,11 @@ import {
   Col, 
   Select, 
   DatePicker, 
-  Descriptions 
+  Descriptions,
+  Dropdown,
+  Menu
 } from 'antd';
-import { SearchOutlined, EyeOutlined } from '@ant-design/icons';
+import { SearchOutlined, EyeOutlined, DownloadOutlined } from '@ant-design/icons';
 import apiClient from '../api';
 import dayjs from 'dayjs';
 
@@ -42,9 +44,12 @@ const OrderManagement = () => {
     pageSize: 10,
     total: 0,
   });
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
+  const [isExportModalVisible, setIsExportModalVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [exportConfig, setExportConfig] = useState({ format: 'xlsx' });
   const [form] = Form.useForm();
+  const [exportForm] = Form.useForm();
   const { message, modal } = App.useApp();
 
   const fetchOrders = async (params = {}) => {
@@ -106,7 +111,7 @@ const OrderManagement = () => {
       const response = await apiClient.get(`/admin/orders/${id}`);
       if (response.data && response.data.code === 200) {
         setSelectedOrder(response.data.data);
-        setIsModalVisible(true);
+        setIsDetailModalVisible(true);
       } else {
         message.error('获取订单详情失败');
       }
@@ -129,6 +134,70 @@ const OrderManagement = () => {
         }
       },
     });
+  };
+
+  const showExportModal = (format) => {
+    const filters = form.getFieldsValue();
+    let nameParts = ['orders'];
+
+    const statusMap = { 2: '待接单', 3: '已接单', 4: '派送中', 5: '已完成', 6: '已取消' };
+    if (filters.status && statusMap[filters.status]) {
+      nameParts.push(statusMap[filters.status]);
+    }
+
+    if (filters.dateRange && filters.dateRange.length === 2) {
+      const startDate = filters.dateRange[0].format('YYYYMMDD');
+      const endDate = filters.dateRange[1].format('YYYYMMDD');
+      nameParts.push(`${startDate}-${endDate}`);
+    } else {
+      nameParts.push(dayjs().format('YYYYMMDD'));
+    }
+
+    if (filters.phone) {
+      nameParts.push(filters.phone);
+    } else if (filters.number) {
+      nameParts.push(filters.number);
+    }
+
+    const defaultFilename = `${nameParts.join('_')}.${format}`;
+
+    setExportConfig({ format });
+    exportForm.setFieldsValue({ filename: defaultFilename });
+    setIsExportModalVisible(true);
+  };
+
+  const handleConfirmExport = async ({ filename }) => {
+    setIsExportModalVisible(false);
+    const format = exportConfig.format;
+    const key = 'exporting';
+    message.loading({ content: `正在生成 ${format.toUpperCase()} 文件...`, key });
+
+    try {
+      const filters = form.getFieldsValue();
+      const params = { ...formatFilters(filters), format };
+
+      const response = await apiClient.get('/admin/orders/export', {
+        params,
+        responseType: 'blob',
+      });
+
+      const blob = new Blob([response.data], { type: response.headers['content-type'] });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      message.success({ content: '文件已开始下载！', key, duration: 2 });
+
+    } catch (error) {
+      message.error({ content: '导出失败，请检查网络或联系管理员', key, duration: 2 });
+      console.error("Export failed:", error);
+    }
   };
 
   const columns = [
@@ -168,6 +237,13 @@ const OrderManagement = () => {
     },
   ];
 
+  const exportMenu = (
+    <Menu onClick={({ key }) => showExportModal(key)}>
+      <Menu.Item key="xlsx">导出为 Excel (.xlsx)</Menu.Item>
+      <Menu.Item key="csv">导出为 CSV (.csv)</Menu.Item>
+    </Menu>
+  );
+
   return (
     <Card title="订单管理">
       <Form form={form} onFinish={handleSearch} layout="vertical">
@@ -179,8 +255,15 @@ const OrderManagement = () => {
         </Row>
         <Row>
           <Col span={24} style={{ textAlign: 'right' }}>
-            <Button type="primary" htmlType="submit" icon={<SearchOutlined />}>搜索</Button>
-            <Button style={{ marginLeft: 8 }} onClick={() => { form.resetFields(); handleSearch({}); }}>重置</Button>
+            <Space>
+              <Button type="primary" htmlType="submit" icon={<SearchOutlined />}>搜索</Button>
+              <Button onClick={() => { form.resetFields(); handleSearch({}); }}>重置</Button>
+              <Dropdown overlay={exportMenu}>
+                <Button icon={<DownloadOutlined />}>
+                  导出订单
+                </Button>
+              </Dropdown>
+            </Space>
           </Col>
         </Row>
       </Form>
@@ -197,9 +280,9 @@ const OrderManagement = () => {
       {selectedOrder && (
         <Modal
           title={`订单详情 (ID: ${selectedOrder.id})`}
-          open={isModalVisible}
-          onCancel={() => setIsModalVisible(false)}
-          footer={<Button onClick={() => setIsModalVisible(false)}>关闭</Button>}
+          open={isDetailModalVisible}
+          onCancel={() => setIsDetailModalVisible(false)}
+          footer={<Button onClick={() => setIsDetailModalVisible(false)}>关闭</Button>}
           width={800}
         >
           <Descriptions bordered column={2}>
@@ -228,6 +311,24 @@ const OrderManagement = () => {
           />
         </Modal>
       )}
+      <Modal
+        title="导出设置"
+        open={isExportModalVisible}
+        onCancel={() => setIsExportModalVisible(false)}
+        onOk={() => exportForm.submit()}
+        okText="确认导出"
+        cancelText="取消"
+      >
+        <Form form={exportForm} onFinish={handleConfirmExport} layout="vertical" initialValues={{ filename: '' }}>
+          <Form.Item
+            name="filename"
+            label="文件名"
+            rules={[{ required: true, message: '请输入文件名！' }]}
+          >
+            <Input />
+          </Form.Item>
+        </Form>
+      </Modal>
     </Card>
   );
 };

@@ -1,0 +1,127 @@
+.cart-bar-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 50px; /* Fixed height */
+  margin: 4px 8px 12px; /* Margin on top, sides, and bottom */
+  padding: 0 12px; /* Symmetrical internal padding */
+  background-color: #333; /* Darker background for active state */
+  color: white;
+  border-radius: 25px; /* Fully rounded corners */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: background-color 0.3s ease;
+}
+
+.cart-bar-container.empty {
+  background-color: #555;
+  color: #aaa;
+}
+
+.cart-bar-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 50px; /* Fixed height */
+  margin: 0 12px 12px; /* Margin on top, sides, and bottom */
+  padding: 0 16px; /* Symmetrical internal padding */
+  background-color: #333; /* Darker background for active state */
+  color: white;
+  border-radius: 25px; /* Fully rounded corners */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: background-color 0.3s ease;
+}
+
+.cart-bar-container.empty {
+  background-color: #555;
+  color: #aaa;
+}
+
+.cart-icon-wrapper {
+  position: relative;
+  padding: 0 8px;
+}
+
+.cart-rider-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  /* margin-top: -20px; */ /* Removed to keep icon inside the bar */
+  background-color: #fff;
+}
+
+.cart-badge {
+  position: absolute;
+  top: -2px;
+  right: 2px;
+  background-color: #ff4d4f;
+  color: white;
+  font-size: 10px;
+  padding: 0 5px;
+  border-radius: 8px;
+  min-width: 16px;
+  text-align: center;
+  line-height: 16px;
+  border: 1px solid #333;
+}
+
+.cart-total-amount {
+  flex-grow: 1;
+  margin-left: 16px;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.cart-checkout-button {
+  flex-shrink: 0;
+}
+
+/* Override antd button disabled style for better visibility */
+.cart-bar-container.empty .adm-button.adm-button-disabled {
+  background-color: #444;
+  color: #888;
+  border-color: #555;
+}
+
+
+.cart-rider-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  /* margin-top: -20px; */ /* Removed to keep icon inside the bar */
+  background-color: #fff;
+}
+
+.cart-badge {
+  position: absolute;
+  top: -2px;
+  right: 2px;
+  background-color: #ff4d4f;
+  color: white;
+  font-size: 10px;
+  padding: 0 5px;
+  border-radius: 8px;
+  min-width: 16px;
+  text-align: center;
+  line-height: 16px;
+  border: 1px solid #333;
+}
+
+.cart-total-amount {
+  flex-grow: 1;
+  margin-left: 16px;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.cart-checkout-button {
+  flex-shrink: 0;
+}
+
+/* Override antd button disabled style for better visibility */
+.cart-bar-container.empty .adm-button.adm-button-disabled {
+  background-color: #444;
+  color: #888;
+  border-color: #555;
+}

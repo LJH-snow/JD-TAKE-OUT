@@ -133,12 +133,12 @@ func (cc *CategoryController) UpdateCategory(c *gin.Context) {
 
 	updateUserID, _ := c.Get("user_id")
 
-	updateData := models.Category{
-		Name:       req.Name,
-		Type:       req.Type,
-		Sort:       req.Sort,
-		Status:     req.Status,
-		UpdateUser: updateUserID.(uint),
+	updateData := map[string]interface{}{
+		"name":       req.Name,
+		"type":       req.Type,
+		"sort":       req.Sort,
+		"status":     req.Status,
+		"update_user": updateUserID.(uint),
 	}
 
 	cc.DB.Model(&category).Updates(updateData)

@@ -1,13 +1,15 @@
 package controllers
 
 import (
+	"encoding/csv"
+	"fmt"
+	"jd-take-out-backend/internal/models"
 	"net/http"
 	"strconv"
 	"time"
 
-	"jd-take-out-backend/internal/models"
-
 	"github.com/gin-gonic/gin"
+	"github.com/xuri/excelize/v2"
 	"gorm.io/gorm"
 )
 
@@ -176,3 +178,153 @@ func (oc *OrderController) UpdateOrderStatus(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "更新成功"})
 }
+
+// ExportOrders 导出订单数据
+// @Summary      导出订单
+// @Description  根据筛选条件导出订单数据为Excel或CSV文件
+// @Tags         订单管理
+// @Accept       json
+// @Produce      application/octet-stream
+// @Security     BearerAuth
+// @Param        format    query    string  true   "导出格式 (xlsx or csv)"
+// @Param        status    query    int     false  "订单状态"
+// @Param        number    query    string  false  "订单号"
+// @Param        phone     query    string  false  "用户手机号"
+// @Param        date_from query    string  false  "开始日期 (YYYY-MM-DD)"
+// @Param        date_to   query    string  false  "结束日期 (YYYY-MM-DD)"
+// @Success      200       {file}    binary  "文件流"
+// @Router       /api/v1/admin/orders/export [get]
+func (oc *OrderController) ExportOrders(c *gin.Context) {
+	format := c.DefaultQuery("format", "xlsx")
+
+	var req ListOrdersRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数绑定失败: " + err.Error()})
+		return
+	}
+
+	var orders []models.Order
+	db := oc.DB.Model(&models.Order{})
+
+	// 应用与列表页完全相同的筛选逻辑
+	if req.Status > 0 {
+		db = db.Where("status = ?", req.Status)
+	}
+	if req.Number != "" {
+		db = db.Where("number LIKE ?", "%"+req.Number+"%")
+	}
+	if req.Phone != "" {
+		db = db.Where("phone LIKE ?", "%"+req.Phone+"%")
+	}
+	if req.DateFrom != "" && req.DateTo != "" {
+		db = db.Where("order_time BETWEEN ? AND ?", req.DateFrom+" 00:00:00", req.DateTo+" 23:59:59")
+	}
+
+	// 导出时获取所有符合条件的记录，不分页
+	err := db.Preload("User").Order("order_time DESC").Find(&orders).Error
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "获取订单列表失败"})
+		return
+	}
+
+	// 根据格式生成文件
+	if format == "xlsx" {
+		oc.exportExcel(c, orders)
+	} else if format == "csv" {
+		oc.exportCSV(c, orders)
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "不支持的导出格式"})
+	}
+}
+
+// exportExcel 生成并写入Excel文件流
+func (oc *OrderController) exportExcel(c *gin.Context, orders []models.Order) {
+	f := excelize.NewFile()
+	streamWriter, err := f.NewStreamWriter("Sheet1")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": err.Error()})
+		return
+	}
+
+	// 设置表头样式
+	style, _ := f.NewStyle(&excelize.Style{Font: &excelize.Font{Bold: true}})
+	headers := []interface{}{"订单号", "下单用户", "手机号", "订单金额", "订单状态", "下单时间", "收货地址"}
+	if err := streamWriter.SetRow("A1", headers, excelize.RowOpts{StyleID: style}); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": err.Error()})
+		return
+	}
+
+	// 写入数据行
+	for i, order := range orders {
+		row := []interface{}{
+			order.Number,
+			order.User.Name,
+			order.Phone,
+			order.Amount,
+			order.GetStatusText(),
+			order.OrderTime.Format("2006-01-02 15:04:05"),
+			order.Address,
+		}
+		if err := streamWriter.SetRow(fmt.Sprintf("A%d", i+2), row); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": err.Error()})
+			return
+		}
+	}
+
+	if err := streamWriter.Flush(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": err.Error()})
+		return
+	}
+
+	fileName := "orders_" + time.Now().Format("20060102150405") + ".xlsx"
+	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	c.Header("Content-Disposition", "attachment; filename="+fileName)
+	if err := f.Write(c.Writer); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "写入文件流失败"})
+	}
+}
+
+// exportCSV 生成并写入CSV文件流
+func (oc *OrderController) exportCSV(c *gin.Context, orders []models.Order) {
+	fileName := "orders_" + time.Now().Format("20060102150405") + ".csv"
+	c.Header("Content-Type", "text/csv; charset=utf-8")
+	c.Header("Content-Disposition", "attachment; filename="+fileName)
+
+	// 写入UTF-8 BOM，防止Excel打开乱码
+	c.Writer.Write([]byte("\xEF\xBB\xBF"))
+
+	w := csv.NewWriter(c.Writer)
+
+	// 写入表头
+	headers := []string{"订单号", "下单用户", "手机号", "订单金额", "订单状态", "下单时间", "收货地址"}
+	w.Write(headers)
+
+	// 写入数据行
+	for _, order := range orders {
+		row := []string{
+			order.Number,
+			order.User.Name,
+			order.Phone,
+			fmt.Sprintf("%.2f", order.Amount),
+			order.GetStatusText(),
+			order.OrderTime.Format("2006-01-02 15:04:05"),
+			order.Address,
+		}
+		w.Write(row)
+	}
+
+	w.Flush()
+}
+
+// GetStatusText 是一个辅助函数，需要添加到 models.Order 中
+// func (o *Order) GetStatusText() string {
+// 	switch o.Status {
+// 	case 1: return "待付款"
+// 	case 2: return "待接单"
+// 	case 3: return "已接单"
+// 	case 4: return "派送中"
+// 	case 5: return "已完成"
+// 	case 6: return "已取消"
+// 	default: return "未知状态"
+// 	}
+// }

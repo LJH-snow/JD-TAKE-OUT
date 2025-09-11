@@ -1,13 +1,15 @@
 package controllers
 
 import (
+	"encoding/csv"
 	"fmt"
+	"jd-take-out-backend/internal/models"
 	"net/http"
 	"strconv"
 	"time"
 
-	"jd-take-out-backend/internal/models"
 	"github.com/gin-gonic/gin"
+	"github.com/xuri/excelize/v2"
 	"gorm.io/gorm"
 )
 
@@ -272,7 +274,235 @@ func (sc *StatsController) GetCategoryStats(c *gin.Context) {
 	})
 }
 
-// ExportData 导出数据
+// ExportSalesData 导出销售趋势数据
+func (sc *StatsController) ExportSalesData(c *gin.Context) {
+	format := c.DefaultQuery("format", "xlsx")
+	startDateStr := c.Query("start")
+	endDateStr := c.Query("end")
+
+	startDate, endDate, err := parseDates(startDateStr, endDateStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": err.Error()})
+		return
+	}
+
+	var salesData []SalesTrendData
+	err = sc.DB.Model(&models.Order{}).
+		Select("DATE(order_time) as date, COALESCE(SUM(amount), 0) as revenue, COUNT(*) as orders, COUNT(DISTINCT user_id) as customers").
+		Where("order_time >= ? AND order_time <= ? AND status = ?", startDate, endDate, 5).
+		Group("DATE(order_time)").
+		Order("date ASC").
+		Scan(&salesData).Error
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "查询销售数据失败"})
+		return
+	}
+
+	if salesData == nil {
+		salesData = make([]SalesTrendData, 0)
+	}
+
+	for i := range salesData {
+		if len(salesData[i].Date) >= 10 {
+			salesData[i].Date = salesData[i].Date[:10]
+		}
+	}
+
+	if format == "xlsx" {
+		sc.exportSalesExcel(c, salesData)
+	} else if format == "csv" {
+		sc.exportSalesCSV(c, salesData)
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "不支持的导出格式"})
+	}
+}
+
+func (sc *StatsController) exportSalesExcel(c *gin.Context, data []SalesTrendData) {
+	f := excelize.NewFile()
+	streamWriter, _ := f.NewStreamWriter("Sheet1")
+	style, _ := f.NewStyle(&excelize.Style{Font: &excelize.Font{Bold: true}})
+	headers := []interface{}{"日期", "营业额", "订单数", "顾客数"}
+	streamWriter.SetRow("A1", headers, excelize.RowOpts{StyleID: style})
+
+	for i, item := range data {
+		row := []interface{}{
+			item.Date,
+			item.Revenue,
+			item.Orders,
+			item.Customers,
+		}
+		streamWriter.SetRow(fmt.Sprintf("A%d", i+2), row)
+	}
+	streamWriter.Flush()
+
+	fileName := "sales_trend_" + time.Now().Format("20060102") + ".xlsx"
+	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	c.Header("Content-Disposition", "attachment; filename="+fileName)
+	f.Write(c.Writer)
+}
+
+func (sc *StatsController) exportSalesCSV(c *gin.Context, data []SalesTrendData) {
+	fileName := "sales_trend_" + time.Now().Format("20060102") + ".csv"
+	c.Header("Content-Type", "text/csv; charset=utf-8")
+	c.Header("Content-Disposition", "attachment; filename="+fileName)
+	c.Writer.Write([]byte("\xEF\xBB\xBF")) // UTF-8 BOM
+
+	w := csv.NewWriter(c.Writer)
+	headers := []string{"日期", "营业额", "订单数", "顾客数"}
+	w.Write(headers)
+
+	for _, item := range data {
+		row := []string{
+			item.Date,
+			fmt.Sprintf("%.2f", item.Revenue),
+			strconv.Itoa(item.Orders),
+			strconv.Itoa(item.Customers),
+		}
+		w.Write(row)
+	}
+	w.Flush()
+}
+
+// ExportDishRanking 导出菜品排行数据
+func (sc *StatsController) ExportDishRanking(c *gin.Context) {
+	format := c.DefaultQuery("format", "xlsx")
+	startDateStr := c.Query("start")
+	endDateStr := c.Query("end")
+
+	startDate, endDate, err := parseDates(startDateStr, endDateStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": err.Error()})
+		return
+	}
+
+	var dishData []DishRankingData
+	// 导出时获取所有数据，不受limit限制
+	err = sc.DB.Table("order_details od").
+		Select("d.id as dish_id, od.name, c.name as category, SUM(od.number) as quantity, SUM(od.amount) as revenue, d.price").
+		Joins("JOIN orders o ON od.order_id = o.id").
+		Joins("JOIN dishes d ON od.dish_id = d.id").
+		Joins("JOIN categories c ON d.category_id = c.id").
+		Where("o.order_time >= ? AND o.order_time <= ? AND o.status = ? AND od.dish_id IS NOT NULL", startDate, endDate, 5).
+		Group("d.id, od.name, c.name, d.price").
+		Order("quantity DESC").
+		Scan(&dishData).Error
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "查询菜品数据失败"})
+		return
+	}
+
+	if dishData == nil {
+		dishData = make([]DishRankingData, 0)
+	}
+
+	if format == "xlsx" {
+		f := excelize.NewFile()
+		streamWriter, _ := f.NewStreamWriter("Sheet1")
+		style, _ := f.NewStyle(&excelize.Style{Font: &excelize.Font{Bold: true}})
+		headers := []interface{}{"菜品名称", "所属分类", "销量", "销售额", "单价"}
+		streamWriter.SetRow("A1", headers, excelize.RowOpts{StyleID: style})
+		for i, item := range dishData {
+			row := []interface{}{item.Name, item.Category, item.Quantity, item.Revenue, item.Price}
+			streamWriter.SetRow(fmt.Sprintf("A%d", i+2), row)
+		}
+		streamWriter.Flush()
+		fileName := "dish_ranking_" + time.Now().Format("20060102") + ".xlsx"
+		c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+		c.Header("Content-Disposition", "attachment; filename="+fileName)
+		f.Write(c.Writer)
+	} else if format == "csv" {
+		fileName := "dish_ranking_" + time.Now().Format("20060102") + ".csv"
+		c.Header("Content-Type", "text/csv; charset=utf-8")
+		c.Header("Content-Disposition", "attachment; filename="+fileName)
+		c.Writer.Write([]byte("\xEF\xBB\xBF"))
+		w := csv.NewWriter(c.Writer)
+		headers := []string{"菜品名称", "所属分类", "销量", "销售额", "单价"}
+		w.Write(headers)
+		for _, item := range dishData {
+			row := []string{item.Name, item.Category, strconv.Itoa(item.Quantity), fmt.Sprintf("%.2f", item.Revenue), fmt.Sprintf("%.2f", item.Price)}
+			w.Write(row)
+		}
+		w.Flush()
+	}
+}
+
+// ExportCategoryStats 导出分类统计数据
+func (sc *StatsController) ExportCategoryStats(c *gin.Context) {
+	format := c.DefaultQuery("format", "xlsx")
+	startDateStr := c.Query("start")
+	endDateStr := c.Query("end")
+
+	startDate, endDate, err := parseDates(startDateStr, endDateStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": err.Error()})
+		return
+	}
+
+	var categoryData []CategoryStatsData
+	err = sc.DB.Table("order_details od").
+		Select("c.name as category, SUM(od.amount) as revenue, SUM(od.number) as quantity").
+		Joins("JOIN orders o ON od.order_id = o.id").
+		Joins("JOIN dishes d ON od.dish_id = d.id").
+		Joins("JOIN categories c ON d.category_id = c.id").
+		Where("o.order_time >= ? AND o.order_time <= ? AND o.status = ? AND od.dish_id IS NOT NULL", startDate, endDate, 5).
+		Group("c.id, c.name").
+		Order("revenue DESC").
+		Scan(&categoryData).Error
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "查询分类数据失败"})
+		return
+	}
+
+	if categoryData == nil {
+		categoryData = make([]CategoryStatsData, 0)
+	}
+
+	var totalRevenue float64
+	for _, cat := range categoryData {
+		totalRevenue += cat.Revenue
+	}
+
+	for i := range categoryData {
+		if totalRevenue > 0 {
+			categoryData[i].Percentage = categoryData[i].Revenue / totalRevenue * 100
+		}
+	}
+
+	if format == "xlsx" {
+		f := excelize.NewFile()
+		streamWriter, _ := f.NewStreamWriter("Sheet1")
+		style, _ := f.NewStyle(&excelize.Style{Font: &excelize.Font{Bold: true}})
+		headers := []interface{}{"分类名称", "销售额", "销量", "销售额占比(%)"}
+		streamWriter.SetRow("A1", headers, excelize.RowOpts{StyleID: style})
+		for i, item := range categoryData {
+			row := []interface{}{item.Category, item.Revenue, item.Quantity, item.Percentage}
+			streamWriter.SetRow(fmt.Sprintf("A%d", i+2), row)
+		}
+		streamWriter.Flush()
+		fileName := "category_stats_" + time.Now().Format("20060102") + ".xlsx"
+		c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+		c.Header("Content-Disposition", "attachment; filename="+fileName)
+		f.Write(c.Writer)
+	} else if format == "csv" {
+		fileName := "category_stats_" + time.Now().Format("20060102") + ".csv"
+		c.Header("Content-Type", "text/csv; charset=utf-8")
+		c.Header("Content-Disposition", "attachment; filename="+fileName)
+		c.Writer.Write([]byte("\xEF\xBB\xBF"))
+		w := csv.NewWriter(c.Writer)
+		headers := []string{"分类名称", "销售额", "销量", "销售额占比(%)"}
+		w.Write(headers)
+		for _, item := range categoryData {
+			row := []string{item.Category, fmt.Sprintf("%.2f", item.Revenue), strconv.Itoa(item.Quantity), fmt.Sprintf("%.2f", item.Percentage)}
+			w.Write(row)
+		}
+		w.Flush()
+	}
+}
+
+// ExportData 导出数据 (旧的存根，可以删除或重构)
 func (sc *StatsController) ExportData(c *gin.Context) {
 	// TODO: 实现数据导出逻辑
 	c.JSON(http.StatusOK, gin.H{

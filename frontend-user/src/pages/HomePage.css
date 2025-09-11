@@ -1,0 +1,11 @@
+.homepage-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.dish-list-wrapper {
+    flex-grow: 1;
+    /* This is crucial for the child with flex layout to get a proper height */
+    min-height: 0;
+}

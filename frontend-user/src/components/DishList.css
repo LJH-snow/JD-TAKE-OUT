@@ -1,0 +1,91 @@
+.dish-list-layout {
+  display: flex;
+  height: 100%; /* This is now needed as its parent has a defined height */
+}
+
+.sidebar-container {
+  height: 100%;
+  overflow-y: auto;
+  border-right: 1px solid #eee;
+  --width: 85px;
+  background-color: #fff;
+}
+
+.content-container {
+  flex: 1;
+  height: 100%;
+  overflow-y: auto;
+  background-color: #fff;
+}
+
+.dish-list-header {
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #333;
+  font-weight: bold;
+  background-color: #f7f8fa;
+  border-bottom: 1px solid #eee;
+}
+
+.dish-name {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.dish-price {
+  color: #fa6419;
+  font-size: 16px;
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 20px;
+}
+
+.dish-item-extra {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quantity-badge {
+  background-color: #fa6419;
+  color: white;
+  font-size: 10px;
+  padding: 0 5px;
+  border-radius: 8px;
+  min-width: 16px;
+  text-align: center;
+  line-height: 16px;
+}
+
+/* Flavor Popup Styles */
+.flavor-popup-content {
+  padding: 16px;
+}
+
+.flavor-dish-name {
+  font-size: 18px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.flavor-group {
+  margin-bottom: 16px;
+}
+
+.flavor-group-name {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.add-to-cart-btn {
+  margin-top: 20px;
+}

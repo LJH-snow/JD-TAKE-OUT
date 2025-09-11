@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Input, Space, Card, App, Modal, Form, Select } from 'antd';
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { Table, Button, Input, Space, Card, App, Modal, Form, Select, Tag } from 'antd';
+import { SearchOutlined, EditOutlined } from '@ant-design/icons';
 import apiClient from '../api';
-import EmployeeForm from '../components/EmployeeForm';
+import UserForm from '../components/UserForm';
 
 const { Option } = Select;
 
-const EmployeeManagement = () => {
-  const [employees, setEmployees] = useState([]);
+const UserManagement = () => {
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
@@ -15,12 +15,12 @@ const EmployeeManagement = () => {
     total: 0,
   });
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [editingEmployee, setEditingEmployee] = useState(null);
+  const [editingUser, setEditingUser] = useState(null);
   const [form] = Form.useForm();
 
-  const { message, modal } = App.useApp();
+  const { message } = App.useApp();
 
-  const fetchEmployees = async (params = {}) => {
+  const fetchUsers = async (params = {}) => {
     setLoading(true);
     try {
       const queryParams = {
@@ -28,9 +28,9 @@ const EmployeeManagement = () => {
         pageSize: params.pageSize,
         ...params.filters,
       };
-      const response = await apiClient.get('/admin/employees', { params: queryParams });
+      const response = await apiClient.get('/admin/users', { params: queryParams });
       if (response.data && response.data.code === 200) {
-        setEmployees(response.data.data.items);
+        setUsers(response.data.data.items);
         setPagination(prev => ({
           ...prev,
           current: params.page,
@@ -38,22 +38,22 @@ const EmployeeManagement = () => {
           total: response.data.data.total,
         }));
       } else {
-        message.error(response.data.message || '获取员工列表失败');
+        message.error(response.data.message || '获取用户列表失败');
       }
     } catch (error) {
-      message.error('网络错误，无法获取员工列表');
+      message.error('网络错误，无法获取用户列表');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchEmployees({ page: 1, pageSize: 10 });
+    fetchUsers({ page: 1, pageSize: 10 });
   }, []);
 
   const handleTableChange = (newPagination) => {
     const filters = form.getFieldsValue();
-    fetchEmployees({
+    fetchUsers({
       page: newPagination.current,
       pageSize: newPagination.pageSize,
       filters: filters,
@@ -61,51 +61,23 @@ const EmployeeManagement = () => {
   };
 
   const handleSearch = (values) => {
-    fetchEmployees({ page: 1, pageSize: pagination.pageSize, filters: values });
-  };
-
-  const handleAdd = () => {
-    setEditingEmployee(null);
-    setIsModalVisible(true);
+    fetchUsers({ page: 1, pageSize: pagination.pageSize, filters: values });
   };
 
   const handleEdit = (record) => {
-    setEditingEmployee(record);
+    setEditingUser(record);
     setIsModalVisible(true);
-  };
-
-  const handleDelete = (id) => {
-    modal.confirm({
-      title: '确认删除',
-      content: `您确定要删除ID为 ${id} 的员工吗？此操作不可撤销。`,
-      okText: '确认',
-      cancelText: '取消',
-      onOk: async () => {
-        try {
-          await apiClient.delete(`/admin/employees/${id}`);
-          message.success('删除成功');
-          fetchEmployees({ page: 1, pageSize: pagination.pageSize });
-        } catch (error) {
-          message.error(error.response?.data?.message || '网络错误，删除失败');
-        }
-      },
-    });
   };
 
   const handleFormSubmit = async (values) => {
     setLoading(true);
     try {
-      let response;
-      if (editingEmployee) {
-        response = await apiClient.put(`/admin/employees/${editingEmployee.id}`, values);
-      } else {
-        response = await apiClient.post('/admin/employees', values);
-      }
+      const response = await apiClient.put(`/admin/users/${editingUser.id}`, values);
 
-      if (response.data && (response.data.code === 200 || response.data.code === 201)) {
-        message.success(editingEmployee ? '更新成功' : '新增成功');
+      if (response.data && response.data.code === 200) {
+        message.success('更新成功');
         setIsModalVisible(false);
-        fetchEmployees({ page: pagination.current, pageSize: pagination.pageSize, filters: form.getFieldsValue() });
+        fetchUsers({ page: pagination.current, pageSize: pagination.pageSize, filters: form.getFieldsValue() });
       } else {
         message.error(response.data.message || '操作失败');
       }
@@ -119,33 +91,38 @@ const EmployeeManagement = () => {
   const columns = [
     { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
     { title: '姓名', dataIndex: 'name', key: 'name' },
-    { title: '用户名', dataIndex: 'username', key: 'username' },
     { title: '手机号', dataIndex: 'phone', key: 'phone' },
     { title: '性别', dataIndex: 'sex', key: 'sex', render: (sex) => (sex === '1' ? '男' : '女') },
-    { title: '身份证号', dataIndex: 'id_number', key: 'id_number' },
-    { title: '状态', dataIndex: 'status', key: 'status', render: (status) => (status === 1 ? '启用' : '禁用') },
+    {
+      title: '状态',
+      dataIndex: 'is_active',
+      key: 'is_active',
+      render: (isActive) => (
+        <Tag color={isActive ? 'success' : 'error'}>
+          {isActive ? '激活' : '禁用'}
+        </Tag>
+      ),
+    },
     {
       title: '操作',
       key: 'action',
       render: (_, record) => (
         <Space size="middle">
-          <Button type="primary" onClick={() => handleEdit(record)}>编辑</Button>
-          <Button type="primary" danger onClick={() => handleDelete(record.id)}>删除</Button>
+          <Button type="primary" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
         </Space>
       ),
     },
   ];
 
   return (
-    <Card title="员工管理">
+    <Card title="用户管理">
       <Form form={form} onFinish={handleSearch} layout="inline" style={{ marginBottom: 16 }}>
         <Form.Item name="name" label="姓名"><Input placeholder="姓名" /></Form.Item>
-        <Form.Item name="username" label="用户名"><Input placeholder="用户名" /></Form.Item>
         <Form.Item name="phone" label="手机号"><Input placeholder="手机号" /></Form.Item>
-        <Form.Item name="status" label="状态">
+        <Form.Item name="is_active" label="状态">
           <Select placeholder="选择状态" style={{ width: 120 }} allowClear>
-            <Option value={1}>启用</Option>
-            <Option value={0}>禁用</Option>
+            <Option value="true">激活</Option>
+            <Option value="false">禁用</Option>
           </Select>
         </Form.Item>
         <Form.Item>
@@ -154,13 +131,10 @@ const EmployeeManagement = () => {
         <Form.Item>
           <Button onClick={() => form.resetFields()}>重置</Button>
         </Form.Item>
-        <Form.Item>
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新增员工</Button>
-        </Form.Item>
       </Form>
       <Table
         columns={columns}
-        dataSource={employees}
+        dataSource={users}
         rowKey="id"
         pagination={pagination}
         loading={loading}
@@ -168,14 +142,14 @@ const EmployeeManagement = () => {
         bordered
       />
       <Modal
-        title={editingEmployee ? '编辑员工' : '新增员工'}
+        title={editingUser ? '编辑用户' : '新增用户'}
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         footer={null}
         destroyOnClose
       >
-        <EmployeeForm 
-          initialValues={editingEmployee}
+        <UserForm 
+          initialValues={editingUser}
           onFormSubmit={handleFormSubmit}
           onCancel={() => setIsModalVisible(false)}
         />
@@ -184,4 +158,4 @@ const EmployeeManagement = () => {
   );
 };
 
-export default EmployeeManagement;
+export default UserManagement;
