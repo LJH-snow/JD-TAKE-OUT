@@ -11,19 +11,17 @@ import {
   LogoutOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
-import { Layout, Menu, theme, Button, message, Avatar, Spin } from 'antd';
+import { Layout, Menu, theme, Button, message, Avatar, Spin, App as AntApp, Space, Switch } from 'antd';
 import Dashboard from './pages/Dashboard';
 import DishManagement from './pages/DishManagement';
 import OrderManagement from './pages/OrderManagement';
 import EmployeeManagement from './pages/EmployeeManagement';
+import SetmealManagement from './pages/SetmealManagement';
+import CategoryManagement from './pages/CategoryManagement';
+import UserManagement from './pages/UserManagement';
+import StoreSettings from './pages/StoreSettings'; // Corrected import
 import LoginPage from './pages/Login';
 import apiClient from './api';
-
-// Placeholder pages for new menu items
-const SetmealManagement = () => <div>套餐管理页面</div>;
-import CategoryManagement from './pages/CategoryManagement';
-const UserManagement = () => <div>用户管理页面</div>;
-const StoreSettings = () => <div>店铺设置页面</div>;
 
 const { Header, Content, Footer, Sider } = Layout;
 
@@ -55,9 +53,10 @@ const menuItems = [
 const App = () => {
   const [authStatus, setAuthStatus] = useState('loading'); // 状态: loading, authenticated, unauthenticated
   const [currentUser, setCurrentUser] = useState(null);
+  const [storeStatus, setStoreStatus] = useState(null); // New state for store status
 
   useEffect(() => {
-    const verifyToken = async () => {
+    const verifyTokenAndFetchSettings = async () => {
       const token = localStorage.getItem('jwt_token');
       if (!token) {
         setAuthStatus('unauthenticated');
@@ -65,32 +64,63 @@ const App = () => {
       }
 
       try {
-        // 通过 /me 接口验证 token 有效性
-        const response = await apiClient.get('/admin/me');
-        if (response.data && response.data.code === 200) {
-          setCurrentUser(response.data.data);
+        // Verify token
+        const userResponse = await apiClient.get('/admin/me');
+        if (userResponse.data && userResponse.data.code === 200) {
+          setCurrentUser(userResponse.data.data);
           setAuthStatus('authenticated');
         } else {
           throw new Error('Token verification failed');
         }
+
+        // Fetch store settings
+        const settingsResponse = await apiClient.get('/admin/settings');
+        if (settingsResponse.data && settingsResponse.data.code === 200) {
+          setStoreStatus(settingsResponse.data.data.is_open);
+        } else {
+          // If settings not found, assume open by default or handle error
+          setStoreStatus(true);
+        }
+
       } catch (error) {
         localStorage.removeItem('jwt_token');
         setAuthStatus('unauthenticated');
+        // Handle error fetching settings if user is authenticated
+        if (currentUser) { // If user was authenticated but settings fetch failed
+            message.error('获取店铺营业状态失败');
+            setStoreStatus(true); // Default to open
+        }
       }
     };
 
-    verifyToken();
-  }, []);
+    verifyTokenAndFetchSettings();
+  }, []); // 依赖数组改为 []，只在组件挂载时运行一次
 
   const handleLoginSuccess = (user) => {
     setCurrentUser(user);
     setAuthStatus('authenticated');
+    // Re-fetch settings after login
+    const fetchSettingsAfterLogin = async () => {
+        try {
+            const settingsResponse = await apiClient.get('/admin/settings');
+            if (settingsResponse.data && settingsResponse.data.code === 200) {
+                setStoreStatus(settingsResponse.data.data.is_open);
+            } else {
+                setStoreStatus(true);
+            }
+        } catch (error) {
+            message.error('获取店铺营业状态失败');
+            setStoreStatus(true);
+        }
+    };
+    fetchSettingsAfterLogin();
   };
 
   const handleLogout = () => {
     localStorage.removeItem('jwt_token');
     setCurrentUser(null);
     setAuthStatus('unauthenticated');
+    setStoreStatus(null); // Clear store status on logout
     message.success('您已成功退出登录');
   };
 
@@ -106,14 +136,15 @@ const App = () => {
     return <LoginPage onLoginSuccess={handleLoginSuccess} />;
   }
 
-  return <MainLayout user={currentUser} onLogout={handleLogout} />;
+  return <MainLayout user={currentUser} onLogout={handleLogout} storeStatus={storeStatus} setStoreStatus={setStoreStatus} />;
 };
 
-const MainLayout = ({ user, onLogout }) => {
+const MainLayout = ({ user, onLogout, storeStatus, setStoreStatus }) => {
   const [collapsed, setCollapsed] = useState(false);
   const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
   const navigate = useNavigate();
   const location = useLocation();
+  const { message } = AntApp.useApp(); // Get message instance from AntApp context
 
   // Logic for menu keys
   const [openKeys, setOpenKeys] = useState([]);
@@ -140,6 +171,28 @@ const MainLayout = ({ user, onLogout }) => {
     setOpenKeys(keys);
   };
 
+  const handleStoreStatusToggle = async (checked) => {
+    try {
+      // Fetch current settings to get other fields
+      const currentSettingsResponse = await apiClient.get('/admin/settings');
+      if (currentSettingsResponse.data && currentSettingsResponse.data.code === 200) {
+        const currentSettings = currentSettingsResponse.data.data;
+        const payload = { ...currentSettings, is_open: checked };
+        const response = await apiClient.put('/admin/settings', payload);
+        if (response.data && response.data.code === 200) {
+          setStoreStatus(checked); // Update local state
+          message.success(`店铺已${checked ? '营业' : '打烊'}`);
+        } else {
+          message.error(response.data.message || '更新店铺状态失败');
+        }
+      } else {
+        message.error('无法获取当前店铺设置');
+      }
+    } catch (error) {
+      message.error(error.response?.data?.message || '网络错误，更新店铺状态失败');
+    }
+  };
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider collapsible collapsed={collapsed} onCollapse={(value) => setCollapsed(value)}>
@@ -157,7 +210,18 @@ const MainLayout = ({ user, onLogout }) => {
       <Layout>
         <Header style={{ padding: '0 16px', background: colorBgContainer, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} >
             <h2 style={{ margin: 0 }}>管理员后台</h2>
-            <div>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              {storeStatus !== null && (
+                <Space size="middle" style={{ marginRight: '16px' }}>
+                  <span>店铺状态:</span>
+                  <Switch
+                    checkedChildren="营业中"
+                    unCheckedChildren="已打烊"
+                    checked={storeStatus}
+                    onChange={handleStoreStatusToggle}
+                  />
+                </Space>
+              )}
               <Avatar style={{ backgroundColor: '#87d068', marginRight: '8px' }} icon={<UserOutlined />} />
               <span style={{marginRight: '16px'}}>欢迎, {user?.name || '管理员'}</span>
               <Button icon={<LogoutOutlined />} onClick={onLogout}>

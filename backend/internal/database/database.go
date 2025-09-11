@@ -48,6 +48,7 @@ func Migrate(db *gorm.DB) error {
 		&models.ShoppingCart{},
 		&models.Setmeal{},
 		&models.SetmealDish{},
+		&models.StoreSetting{},
 	}
 
 	for _, model := range models {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Table, Button, Space, Card, App, Image, Modal } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import apiClient from '../api';
-import SetmealForm from '../components/SetmealForm'; // We will create this component next
+import SetmealForm from '../components/SetmealForm';
 
 const SetmealManagement = () => {
   const [setmeals, setSetmeals] = useState([]);
@@ -72,11 +72,24 @@ const SetmealManagement = () => {
       cancelText: '取消',
       onOk: async () => {
         try {
-          await apiClient.delete(`/admin/setmeals/${id}`);
-          message.success('删除成功');
-          fetchSetmeals({ page: 1, pageSize: pagination.pageSize });
+          const response = await apiClient.delete(`/admin/setmeals/${id}`);
+          if (response.status === 200 || response.status === 204) {
+            message.success('删除成功');
+            // 重新获取第一页数据
+            fetchSetmeals({ page: 1, pageSize: pagination.pageSize });
+          } else {
+            // 此处可能永远不会到达，因为axios错误会直接进catch
+            message.error(response.data.message || '删除失败');
+          }
         } catch (error) {
-          message.error('网络错误，删除失败');
+          // 即使后端返回204，如果axios配置为在空响应时抛错，也会进入这里
+          // 我们假设任何非失败状态码（如200, 204）都算成功
+          if (error.response && (error.response.status === 200 || error.response.status === 204)) {
+            message.success('删除成功');
+            fetchSetmeals({ page: 1, pageSize: pagination.pageSize });
+          } else {
+            message.error(error.response?.data?.message || '网络错误，删除失败');
+          }
         }
       },
     });
@@ -100,7 +113,7 @@ const SetmealManagement = () => {
         message.error(response.data.message || '操作失败');
       }
     } catch (error) {
-      message.error('网络错误，操作失败');
+      message.error(error.response?.data?.message || '网络错误，操作失败');
     } finally {
       setLoading(false);
     }
@@ -172,12 +185,11 @@ const SetmealManagement = () => {
         destroyOnClose
         width={600}
       >
-        {/* <SetmealForm 
+        <SetmealForm 
           initialValues={editingSetmeal}
           onFormSubmit={handleFormSubmit}
           onCancel={() => setIsModalVisible(false)}
-        /> */}
-        <p>套餐表单将在这里实现...</p>
+        />
       </Modal>
     </Card>
   );

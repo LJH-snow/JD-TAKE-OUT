@@ -22,7 +22,9 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 
 	// CORS中间件
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173", "http://localhost:5174"},
+		// 在开发环境中允许所有来源，方便调试
+		AllowAllOrigins:  true,
+		// AllowOrigins:     []string{"http://localhost:5173", "http://localhost:5174", "http://10.0.2.2:5173"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -41,7 +43,11 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 	dishController := &controllers.DishController{DB: db}
 	categoryController := &controllers.CategoryController{DB: db}
 	orderController := &controllers.OrderController{DB: db}
-	setmealController := &controllers.SetmealController{DB: db} // 新增套餐控制器
+	setmealController := &controllers.SetmealController{DB: db}
+	employeeController := &controllers.EmployeeController{DB: db}
+	userController := &controllers.UserController{DB: db}
+	settingController := &controllers.SettingController{DB: db}
+    menuController := &controllers.MenuController{DB: db} // 补上这行
 	authController := &controllers.AuthController{
 		DB:      db,
 		Config:  cfg,
@@ -51,6 +57,15 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 	// API路由组
 	api := r.Group("/api/v1")
 	{
+
+		// =====================================================================
+		// =================== PUBLIC ROUTES (NO AUTH REQUIRED) =================
+		// =====================================================================
+		api.GET("/store-settings", settingController.GetSettings)
+		api.GET("/menu", menuController.GetFullMenu)
+		api.GET("/categories", categoryController.ListCategories)
+		api.GET("/dishes", dishController.ListDishes)
+
 		// 认证相关路由
 		auth := api.Group("/auth")
 		{
@@ -101,6 +116,7 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 				orders.GET("", orderController.ListOrders)
 				orders.GET("/:id", orderController.GetOrderByID)
 				orders.PUT("/:id/status", orderController.UpdateOrderStatus)
+				orders.GET("/export", orderController.ExportOrders) // 新增导出路由
 			}
 
 			// 套餐管理
@@ -111,6 +127,42 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 				setmeals.GET("/:id", setmealController.GetSetmealByID)
 				setmeals.PUT("/:id", setmealController.UpdateSetmeal)
 				setmeals.DELETE("/:id", setmealController.DeleteSetmeal)
+			}
+
+			// 员工管理
+			employees := admin.Group("/employees")
+			{
+				employees.GET("", employeeController.ListEmployees)
+				employees.POST("", employeeController.CreateEmployee)
+				employees.GET("/:id", employeeController.GetEmployeeByID)
+				employees.PUT("/:id", employeeController.UpdateEmployee)
+				employees.DELETE("/:id", employeeController.DeleteEmployee)
+			}
+
+			// 用户管理
+			users := admin.Group("/users")
+			{
+				users.GET("", userController.ListUsers)
+				users.GET("/:id", userController.GetUserByID)
+				users.PUT("/:id", userController.UpdateUser)
+			}
+
+			// 店铺设置
+			settings := admin.Group("/settings")
+			{
+				settings.GET("", settingController.GetSettings)
+				settings.PUT("", settingController.UpdateSettings)
+			}
+
+			// 数据导出
+			export := admin.Group("/export")
+			{
+				statsExport := export.Group("/stats")
+				{
+					statsExport.GET("/sales", statsController.ExportSalesData)
+					statsExport.GET("/dishes", statsController.ExportDishRanking)
+					statsExport.GET("/categories", statsController.ExportCategoryStats)
+				}
 			}
 
 			// 数据导出

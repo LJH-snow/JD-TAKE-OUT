@@ -53,6 +53,7 @@ func (dc *DishController) ListDishes(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 	name := c.Query("name")
+	categoryID := c.Query("categoryId")
 
 	var dishes []models.Dish
 	var total int64
@@ -64,6 +65,11 @@ func (dc *DishController) ListDishes(c *gin.Context) {
 		db = db.Where("name LIKE ?", "%"+name+"%")
 	}
 
+	// 按分类ID精确搜索
+	if categoryID != "" {
+		db = db.Where("category_id = ?", categoryID)
+	}
+
 	// 获取总数
 	if err := db.Count(&total).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "获取菜品总数失败"})
@@ -71,7 +77,7 @@ func (dc *DishController) ListDishes(c *gin.Context) {
 	}
 
 	// 获取分页数据
-	if err := db.Preload("Category").Order("id ASC").Offset((page - 1) * limit).Limit(limit).Find(&dishes).Error; err != nil {
+	if err := db.Preload("Category").Preload("DishFlavors").Order("id ASC").Offset((page - 1) * limit).Limit(limit).Find(&dishes).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "获取菜品列表失败"})
 		return
 	}

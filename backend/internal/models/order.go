@@ -131,3 +131,25 @@ const (
 	CategoryTypeDish    = 1 // 菜品分类
 	CategoryTypeSetmeal = 2 // 套餐分类
 )
+
+// GetStatusText 返回订单状态的文本描述
+func (o *Order) GetStatusText() string {
+	switch o.Status {
+	case OrderStatusPending:
+		return "待付款"
+	case OrderStatusWaiting:
+		return "待接单"
+	case OrderStatusConfirmed:
+		return "已接单"
+	case OrderStatusDelivering:
+		return "派送中"
+	case OrderStatusCompleted:
+		return "已完成"
+	case OrderStatusCancelled:
+		return "已取消"
+	case OrderStatusRefunded:
+		return "已退款"
+	default:
+		return "未知状态"
+	}
+}

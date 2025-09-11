@@ -1,10 +1,10 @@
 package controllers
 
 import (
+	"jd-take-out-backend/internal/models"
 	"net/http"
 	"strconv"
-
-	"jd-take-out-backend/internal/models"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -54,7 +54,7 @@ func (sc *SetmealController) ListSetmeals(c *gin.Context) {
 
 	// 获取分页数据
 	offset := (page - 1) * limit
-	err := db.Preload("Category").Preload("SetmealDishes").Order("id ASC").Offset(offset).Limit(limit).Find(&setmeals).Error
+	err := sc.DB.Model(&models.Setmeal{}).Preload("Category").Preload("SetmealDishes").Order("id ASC").Offset(offset).Limit(limit).Find(&setmeals).Error
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "获取套餐列表失败"})
 		return
@@ -240,29 +240,49 @@ func (sc *SetmealController) UpdateSetmeal(c *gin.Context) {
 // @Success      204  {object}  nil "删除成功"
 // @Router       /api/v1/admin/setmeals/{id} [delete]
 func (sc *SetmealController) DeleteSetmeal(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "无效的ID格式"})
+		return
+	}
+
+	// 检查套餐是否仍在起售状态
+	var setmeal models.Setmeal
+	if err := sc.DB.First(&setmeal, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "套餐未找到"})
+		return
+	}
+
+	if setmeal.Status == 1 {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "无法删除起售中的套餐，请先停售"})
+		return
+	}
+
 	tx := sc.DB.Begin()
 
-	// 1. 删除套餐菜品关联
+	// 1. 删除套餐与菜品的关联记录
 	if err := tx.Where("setmeal_id = ?", id).Delete(&models.SetmealDish{}).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "删除关联菜品失败"})
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "删除套餐关联菜品失败: " + err.Error()})
 		return
 	}
 
-	// 2. 删除套餐本身
-	if err := tx.Delete(&models.Setmeal{}, id).Error; err != nil {
+	// 2. 手动执行软删除：显式更新 deleted_at 字段
+	result := tx.Model(&models.Setmeal{}).Where("id = ?", id).Update("deleted_at", time.Now())
+	if result.Error != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "删除套餐失败"})
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "软删除套餐失败: " + result.Error.Error()})
 		return
 	}
 
-	if tx.RowsAffected == 0 {
+	// 如果影响行数为0，说明该套餐不存在或已被删除
+	if result.RowsAffected == 0 {
 		tx.Rollback()
-		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "套餐未找到，无法删除"})
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "套餐未找到或已被删除"})
 		return
 	}
 
 	tx.Commit()
-	c.Status(http.StatusNoContent)
+
+	c.Status(http.StatusNoContent) // 返回 204 No Content 表示成功
 }

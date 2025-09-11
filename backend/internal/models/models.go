@@ -107,3 +107,19 @@ type AddressBook struct {
 	UpdatedAt        time.Time      `json:"updated_at"`
 	DeletedAt        gorm.DeletedAt `json:"-" gorm:"index"`
 }
+
+// StoreSetting 店铺设置模型
+type StoreSetting struct {
+	ID          uint           `json:"id" gorm:"primarykey"`
+	Name        string         `json:"name" gorm:"size:100;not null"`
+	Address     string         `json:"address" gorm:"size:255"`
+	Phone       string         `json:"phone" gorm:"size:20"`
+	Description string         `json:"description" gorm:"size:500"`
+	Logo        string         `json:"logo" gorm:"size:255"`
+	IsOpen      bool           `json:"is_open" gorm:"default:true"` // Added field
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+	CreateUser  uint           `json:"create_user"`
+	UpdateUser  uint           `json:"update_user"`
+	DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`
+}
