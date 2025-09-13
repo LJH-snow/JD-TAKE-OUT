@@ -1,0 +1,77 @@
+.delivery-card {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  margin: -5px 15px 10px 15px; /* Negative top margin to overlap slightly */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  text-align: center;
+}
+
+.delivery-card h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+
+.delivery-card p {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
+}
+
+.status-completed h3 {
+  color: #52c41a; /* Green */
+}
+
+.status-delivering h3 {
+  color: #1890ff; /* Blue */
+}
+
+.status-preparing h3 {
+  color: #faad14; /* Orange */
+}
+
+/* Map Placeholder Styles */
+.map-placeholder {
+  position: relative;
+  height: 100px;
+  background-color: #f0f2f5;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  overflow: hidden;
+}
+
+.route-line {
+  position: absolute;
+  top: 50%;
+  left: 15%;
+  right: 15%;
+  height: 2px;
+  background: repeating-linear-gradient(
+    -45deg,
+    #ccc,
+    #ccc 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+
+.shop-marker, .rider-marker, .user-marker {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 24px;
+}
+
+.shop-marker { left: 10%; }
+.user-marker { right: 10%; }
+.rider-marker {
+  left: 50%;
+  transform: translate(-50%, -50%) scaleX(-1); /* 水平翻转图标 */
+  animation: rider-move 5s linear infinite;
+}
+
+@keyframes rider-move {
+  0% { left: 15%; }
+  100% { left: 85%; }
+}

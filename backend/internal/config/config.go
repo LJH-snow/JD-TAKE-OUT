@@ -79,7 +79,7 @@ func setDefaults() {
 	viper.SetDefault("database.sslmode", "disable")
 
 	// JWT配置
-	viper.SetDefault("jwt.secret", "jd-take-out-secret-key")
+	viper.SetDefault("jwt.secret", "jd-take-out-secret-key-2025")
 	viper.SetDefault("jwt.expire", 24)
 
 	// Redis配置

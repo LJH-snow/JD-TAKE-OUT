@@ -1,0 +1,46 @@
+.tabs-container {
+  background-color: #fff;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.sticky-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  width: 100%;
+  max-width: 750px; /* 与 app-container 保持一致 */
+  margin: 0 auto;
+}
+
+.tabs-scroll-view {
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* IE 10+ */
+  padding: 0 8px;
+}
+
+.tabs-scroll-view::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.tab-item {
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #595959;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border-bottom: 2px solid transparent;
+  transition: color 0.3s, border-color 0.3s;
+}
+
+.tab-item.active {
+  color: #1890ff;
+  font-weight: 500;
+  border-bottom-color: #1890ff;
+}
+
+.tab-item:hover {
+  color: #1890ff;
+}

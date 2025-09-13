@@ -1,35 +1,45 @@
+
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { ConfigProvider } from 'antd-mobile';
-import zhCN from 'antd-mobile/es/locales/zh-CN';
-import AppHeader from './components/AppHeader';
-import CartBar from './components/CartBar';
-import HomePage from './pages/HomePage';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import StorePage from './pages/StorePage';
+import OrderConfirmationPage from './pages/OrderConfirmationPage';
+import UserProfilePage from './pages/UserProfilePage';
+import AddressListPage from './pages/AddressListPage';
+import AddressEditPage from './pages/AddressEditPage';
+import ProfileEditPage from './pages/ProfileEditPage';
+import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
-import CartPage from './pages/CartPage';
-import CheckoutPage from './pages/CheckoutPage';
+
+import OrderListPage from './pages/OrderListPage';
+import OrderDetailPage from './pages/OrderDetailPage';
+import SettingsPage from './pages/SettingsPage';
 
 function App() {
   return (
-    <ConfigProvider locale={zhCN}>
-      <BrowserRouter>
-        <div className="app-container">
-          <header className="app-header">
-            <AppHeader />
-          </header>
-          <main className="app-main-content">
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/cart" element={<CartPage />} />
-              <Route path="/checkout" element={<CheckoutPage />} />
-            </Routes>
-          </main>
-          <footer className="app-footer">
-            <CartBar />
-          </footer>
-        </div>
-      </BrowserRouter>
-    </ConfigProvider>
+    <Router>
+      <Routes>
+        <Route path="/" element={<StorePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        
+        {/* 受保护的路由 */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/checkout" element={<OrderConfirmationPage />} />
+          <Route path="/profile" element={<UserProfilePage />} />
+          <Route path="/addresses" element={<AddressListPage />} />
+          <Route path="/addresses/edit/:id" element={<AddressEditPage />} />
+          <Route path="/addresses/new" element={<AddressEditPage />} />
+          <Route path="/profile/edit" element={<ProfileEditPage />} /> {/* 添加新路由 */}
+          <Route path="/orders" element={<OrderListPage />} />
+          <Route path="/orders/:id" element={<OrderDetailPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+        </Route>
+
+      </Routes>
+    </Router>
   );
 }
+
 export default App;

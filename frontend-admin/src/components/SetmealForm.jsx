@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Input, InputNumber, Select, Button, message, Space, Transfer } from 'antd';
 import apiClient from '../api';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 
 const { Option } = Select;
 
@@ -10,13 +11,17 @@ const SetmealForm = ({ initialValues, onFormSubmit, onCancel }) => {
   const [allDishes, setAllDishes] = useState([]);
   const [targetKeys, setTargetKeys] = useState([]);
   const [loading, setLoading] = useState(false);
+  const { currentUser } = useCurrentUser();
+  const isAdmin = currentUser?.role === 'admin';
 
   // Fetch categories and dishes
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const catPromise = apiClient.get('/admin/categories/list?type=2'); // 套餐分类
-        const dishPromise = apiClient.get('/admin/dishes?limit=1000'); // 获取所有菜品
+        const catEndpoint = isAdmin ? '/admin/categories/list?type=2' : '/employee/categories?type=2';
+        const dishEndpoint = isAdmin ? '/admin/dishes?limit=1000' : '/employee/dishes?limit=1000';
+        const catPromise = apiClient.get(catEndpoint); // 套餐分类
+        const dishPromise = apiClient.get(dishEndpoint); // 获取所有菜品
         const [catResponse, dishResponse] = await Promise.all([catPromise, dishPromise]);
 
         if (catResponse.data?.code === 200) {
@@ -97,7 +102,7 @@ const SetmealForm = ({ initialValues, onFormSubmit, onCancel }) => {
           titles={['所有菜品', '已选菜品']}
         />
       </Form.Item>
-      <Form.Item name="image" label="图片链接" rules={[{ type: 'url' }]}>
+      <Form.Item name="image" label="图片链接">
         <Input placeholder="请输入图片的URL" />
       </Form.Item>
       <Form.Item name="description" label="描述">

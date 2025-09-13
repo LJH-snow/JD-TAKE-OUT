@@ -1,0 +1,134 @@
+.store-header-container {
+  width: 100%;
+  position: relative;
+  min-height: 190px; /* Ensure it contains the absolutely positioned info card */
+}
+
+.store-cover {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  display: block;
+}
+
+.store-info-card {
+  position: absolute;
+  top: 60px; /* Adjusted to reduce gap with user status and overlap cover more */
+  left: 15px;
+  right: 15px;
+  background: #fff;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: flex-start;
+}
+
+.store-logo {
+  width: 80px;
+  height: 80px;
+  border-radius: 6px;
+  margin-right: 15px;
+  border: 1px solid #eee;
+}
+
+.store-details {
+  flex: 1;
+  min-width: 0; /* Prevents flex item from overflowing */
+}
+
+.store-name {
+  font-size: 20px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.store-meta {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.store-meta span {
+  margin-right: 10px;
+}
+
+.store-announcement,
+.store-description {
+  font-size: 12px;
+  color: #999;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 4px;
+}
+
+.store-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-left: 10px;
+}
+
+.favorite-button {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  color: #666;
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 12px;
+  cursor: pointer;
+  margin-bottom: 8px; /* Space between buttons */
+}
+
+.phone-button {
+  font-size: 20px; /* Make icon larger */
+  text-decoration: none;
+  color: #333;
+}
+
+/* The main content will now naturally flow below the header container */
+.store-main-content {
+  padding-top: 0; /* Remove padding-top as min-height handles spacing */
+}
+
+/* New styles for user status and profile button */
+.user-status-area {
+  position: absolute;
+  top: 10px; /* Adjust as needed */
+  right: 10px; /* Adjust as needed */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 10; /* Ensure it's above other elements */
+  color: white;
+  font-size: 0.9em;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+.user-greeting {
+  /* Basic styling for the text */
+}
+
+.profile-circle-button {
+  width: 40px; /* Larger size */
+  height: 40px; /* Larger size */
+  border-radius: 50%; /* Circular shape */
+  background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent white */
+  color: #e44d26; /* Accent color */
+  border: 2px solid #e44d26;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.2em; /* Larger text/icon */
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.profile-circle-button:hover {
+  background-color: rgba(255, 255, 255, 1);
+  transform: scale(1.05);
+}

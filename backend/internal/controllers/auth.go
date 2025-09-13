@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"encoding/json"
+	"log"
 	"net/http"
 	"strings"
 
@@ -19,11 +21,29 @@ type AuthController struct {
 	JWTUtil *utils.JWTUtil
 }
 
-// LoginRequest 登录请求结构
-type LoginRequest struct {
+// AdminLoginRequest 管理员登录请求结构
+type AdminLoginRequest struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
+}
+
+// UserLoginRequest 用户登录请求结构
+type UserLoginRequest struct {
+	Phone    string `json:"phone" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
+
+// LoginRequest 登录请求结构 (用于判断类型)
+type LoginTypeRequest struct {
 	UserType string `json:"user_type"` // admin(管理员) 或 user(用户)
+}
+
+// UserRegisterRequest 用户注册请求结构
+type UserRegisterRequest struct {
+	Password string `json:"password" binding:"required"`
+	Name     string `json:"name" binding:"required"`
+	Phone    string `json:"phone" binding:"required"`
+	Email    string `json:"email"`
 }
 
 // RegisterRequest 注册请求结构
@@ -48,32 +68,75 @@ type RegisterRequest struct {
 //	@Failure		401	{object}	map[string]interface{}	"认证失败"
 //	@Failure		500	{object}	map[string]interface{}	"服务器错误"
 //	@Router			/api/v1/auth/login [post]
+// Login 用户登录
+//
+//	@Summary		用户登录
+//	@Description	支持管理员和普通用户登录，返回JWT Token
+//	@Tags			认证
+//	@Accept			json
+//	@Produce		json
+//	@Param			body	body	LoginTypeRequest	true	"登录请求参数(根据user_type区分)"
+//	@Success		200	{object}	map[string]interface{}	"登录成功"
+//	@Failure		400	{object}	map[string]interface{}	"请求参数错误"
+//	@Failure		401	{object}	map[string]interface{}	"认证失败"
+//	@Failure		500	{object}	map[string]interface{}	"服务器错误"
+//	@Router			/api/v1/auth/login [post]
 func (ac *AuthController) Login(c *gin.Context) {
-	var req LoginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "请求参数错误: " + err.Error(),
-		})
+	body, err := c.GetRawData()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "无法读取请求体"})
 		return
 	}
 
-	// 默认为管理员登录
-	if req.UserType == "" {
-		req.UserType = "admin"
+	// [DEBUG] 打印原始请求体
+	log.Printf("[Login Debug] Raw request body: %s", string(body))
+
+	// 恢复请求体，以便后续可能的再次读取（虽然在此逻辑中非必须，但属良好实践）
+	// c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
+
+	// 首先，判断登录类型
+	var typeReq LoginTypeRequest
+	if err := json.Unmarshal(body, &typeReq); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "无效的JSON格式"})
+		return
 	}
 
-	if req.UserType == "admin" {
+	// 默认为用户登录
+	if typeReq.UserType == "" {
+		typeReq.UserType = "user"
+	}
+
+	if typeReq.UserType == "admin" {
 		// 管理员登录
+		var req AdminLoginRequest
+		if err := json.Unmarshal(body, &req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "管理员登录参数JSON解析失败: " + err.Error()})
+			return
+		}
+		// 手动验证
+		if req.Username == "" || req.Password == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "管理员登录需要用户名和密码"})
+			return
+		}
 		ac.adminLogin(c, req)
 	} else {
 		// 用户登录
+		var req UserLoginRequest
+		if err := json.Unmarshal(body, &req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "用户登录参数JSON解析失败: " + err.Error()})
+			return
+		}
+		// 手动验证
+		if req.Phone == "" || req.Password == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "用户登录需要手机号和密码"})
+			return
+		}
 		ac.userLogin(c, req)
 	}
 }
 
 // adminLogin 管理员登录
-func (ac *AuthController) adminLogin(c *gin.Context, req LoginRequest) {
+func (ac *AuthController) adminLogin(c *gin.Context, req AdminLoginRequest) {
 	var employee models.Employee
 	err := ac.DB.Where("username = ? AND status = ?", req.Username, 1).First(&employee).Error
 	if err != nil {
@@ -100,8 +163,16 @@ func (ac *AuthController) adminLogin(c *gin.Context, req LoginRequest) {
 		return
 	}
 
+	// 根据用户名判断角色
+	var role string
+	if employee.Username == "admin" || employee.Username == "manager" {
+		role = "admin"
+	} else {
+		role = "employee"
+	}
+
 	// 生成Token
-	token, err := ac.JWTUtil.GenerateToken(employee.ID, employee.Username, "admin")
+	token, err := ac.JWTUtil.GenerateToken(employee.ID, employee.Username, role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    500,
@@ -119,16 +190,16 @@ func (ac *AuthController) adminLogin(c *gin.Context, req LoginRequest) {
 				"id":       employee.ID,
 				"username": employee.Username,
 				"name":     employee.Name,
-				"role":     "admin",
+				"role":     role,
 			},
 		},
 	})
 }
 
 // userLogin 用户登录
-func (ac *AuthController) userLogin(c *gin.Context, req LoginRequest) {
+func (ac *AuthController) userLogin(c *gin.Context, req UserLoginRequest) {
 	var user models.User
-	err := ac.DB.Where("phone = ? AND is_active = ?", req.Username, true).First(&user).Error
+	err := ac.DB.Where("phone = ? AND is_active = ?", req.Phone, true).First(&user).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusUnauthorized, gin.H{
@@ -188,14 +259,14 @@ func (ac *AuthController) userLogin(c *gin.Context, req LoginRequest) {
 //	@Tags			认证
 //	@Accept			json
 //	@Produce		json
-//	@Param			body	body	RegisterRequest	true	"注册请求参数"
+//	@Param			body	body	UserRegisterRequest	true	"注册请求参数"
 //	@Success		200	{object}	map[string]interface{}	"注册成功"
 //	@Failure		400	{object}	map[string]interface{}	"请求参数错误"
 //	@Failure		409	{object}	map[string]interface{}	"用户已存在"
 //	@Failure		500	{object}	map[string]interface{}	"服务器错误"
 //	@Router			/api/v1/auth/register [post]
 func (ac *AuthController) Register(c *gin.Context) {
-	var req RegisterRequest
+	var req UserRegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
@@ -333,8 +404,8 @@ func (ac *AuthController) GetCurrentUser(c *gin.Context) {
 		return
 	}
 
-	// 在管理后台，我们只关心管理员角色
-	if userClaims.Role != "admin" {
+	// 支持管理员和员工角色
+	if userClaims.Role != "admin" && userClaims.Role != "employee" {
 		c.JSON(http.StatusForbidden, gin.H{"code": 403, "message": "权限不足"})
 		return
 	}
@@ -354,6 +425,64 @@ func (ac *AuthController) GetCurrentUser(c *gin.Context) {
 			"username": employee.Username,
 			"name":     employee.Name,
 			"role":     userClaims.Role,
+		},
+	})
+}
+
+// GetCurrentUserForUser 获取当前登录用户信息 (用户端)
+// @Summary      获取当前用户信息 (用户端)
+// @Description  根据提供的JWT令牌获取当前登录用户的信息
+// @Tags         认证
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  map[string]interface{}  "获取成功"
+// @Failure      401  {object}  map[string]interface{}  "认证失败"
+// @Failure      403  {object}  map[string]interface{}  "权限不足"
+// @Router       /api/v1/user/me [get]
+func (ac *AuthController) GetCurrentUserForUser(c *gin.Context) {
+	claims, exists := c.Get("claims")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"code":    401,
+			"message": "无效的认证令牌",
+		})
+		return
+	}
+
+	userClaims, ok := claims.(*utils.Claims)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"code":    401,
+			"message": "认证令牌格式错误",
+		})
+		return
+	}
+
+	// 确保是用户角色
+	if userClaims.Role != "user" {
+		c.JSON(http.StatusForbidden, gin.H{"code": 403, "message": "权限不足"})
+		return
+	}
+
+	var user models.User
+	err := ac.DB.First(&user, userClaims.UserID).Error
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "用户不存在"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 200,
+		"message": "验证成功",
+		"data": gin.H{
+			"id":    user.ID,
+			"name":  user.Name,
+			"phone": user.Phone,
+			"email": user.Email,
+			"sex":   user.Sex,
+			"avatar": user.Avatar,
+			"role":  userClaims.Role,
 		},
 	})
 }

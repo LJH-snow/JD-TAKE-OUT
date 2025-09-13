@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Input, InputNumber, Select, Button, message, Space } from 'antd';
 import apiClient from '../api';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 
 const { Option } = Select;
 
@@ -8,11 +9,14 @@ const DishForm = ({ initialValues, onFormSubmit, onCancel }) => {
   const [form] = Form.useForm();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
+  const { currentUser } = useCurrentUser();
+  const isAdmin = currentUser?.role === 'admin';
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await apiClient.get('/admin/categories/list?type=1');
+        const endpoint = isAdmin ? '/admin/categories/list?type=1' : '/employee/categories?type=1';
+        const response = await apiClient.get(endpoint);
         if (response.data && response.data.code === 200 && Array.isArray(response.data.data)) {
           setCategories(response.data.data);
         } else {

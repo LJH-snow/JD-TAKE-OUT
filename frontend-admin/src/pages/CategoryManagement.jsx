@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Table, Button, Space, Card, App, Tag, Modal } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import apiClient from '../api';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 import CategoryForm from '../components/CategoryForm'; // 引入表单组件
 
 const CategoryManagement = () => {
@@ -10,11 +11,14 @@ const CategoryManagement = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const { message, modal } = App.useApp();
+  const { currentUser } = useCurrentUser();
+  const isAdmin = currentUser?.role === 'admin';
 
   const fetchCategories = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.get('/admin/categories/list');
+      const endpoint = isAdmin ? '/admin/categories/list' : '/employee/categories';
+      const response = await apiClient.get(endpoint);
       if (response.data && response.data.code === 200) {
         setCategories(response.data.data);
       } else {
@@ -46,9 +50,11 @@ const CategoryManagement = () => {
     try {
       let response;
       if (editingCategory) {
-        response = await apiClient.put(`/admin/categories/${editingCategory.id}`, values);
+        const endpoint = `/admin/categories/${editingCategory.id}`;
+        response = await apiClient.put(endpoint, values);
       } else {
-        response = await apiClient.post('/admin/categories', values);
+        const endpoint = '/admin/categories';
+        response = await apiClient.post(endpoint, values);
       }
 
       if (response.data && (response.data.code === 200 || response.data.code === 201)) {
@@ -73,7 +79,8 @@ const CategoryManagement = () => {
       cancelText: '取消',
       onOk: async () => {
         try {
-          const response = await apiClient.delete(`/admin/categories/${id}`);
+          const endpoint = `/admin/categories/${id}`;
+          const response = await apiClient.delete(endpoint);
           if (response.status === 204) {
             message.success('删除成功');
             fetchCategories(); // 重新加载数据
@@ -112,7 +119,7 @@ const CategoryManagement = () => {
         </Tag>
       ),
     },
-    {
+    ...(isAdmin ? [{
       title: '操作',
       key: 'action',
       render: (_, record) => (
@@ -121,15 +128,17 @@ const CategoryManagement = () => {
           <Button type="primary" danger onClick={() => handleDelete(record.id)}>删除</Button>
         </Space>
       ),
-    },
+    }] : []),
   ];
 
   return (
-    <Card title="分类管理">
+    <Card title={isAdmin ? "分类管理" : "分类查看"}>
       <Space style={{ marginBottom: 16 }}>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-          新增分类
-        </Button>
+        {isAdmin && (
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+            新增分类
+          </Button>
+        )}
       </Space>
       <Table
         columns={columns}

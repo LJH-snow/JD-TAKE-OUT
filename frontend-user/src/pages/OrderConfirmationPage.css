@@ -1,0 +1,170 @@
+/* Basic styling for OrderConfirmationPage */
+.order-confirmation-page {
+  padding: 20px;
+  max-width: 800px;
+  margin: 20px auto;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.section {
+  margin-bottom: 20px;
+  padding: 15px;
+  border: 1px solid #eee;
+  border-radius: 5px;
+  background-color: #fff;
+}
+
+.section h2 {
+  color: #333;
+  margin-top: 0;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+}
+
+.item-list .item-card {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed #eee;
+}
+
+.item-list .item-card:last-child {
+  border-bottom: none;
+}
+
+.item-image {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  margin-right: 15px;
+  border-radius: 4px;
+}
+
+.item-info {
+  flex-grow: 1;
+}
+
+.item-name {
+  font-weight: bold;
+  margin: 0;
+}
+
+.item-price {
+  color: #666;
+  font-size: 0.9em;
+  margin: 0;
+}
+
+.item-subtotal {
+  font-weight: bold;
+  color: #e44d26;
+}
+
+.total-amount {
+  text-align: right;
+  font-size: 1.2em;
+  font-weight: bold;
+  margin-top: 15px;
+  color: #e44d26;
+}
+
+.address-list .address-card {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.address-list .address-card:hover {
+  background-color: #f0f0f0;
+}
+
+.address-list .address-card input[type="radio"] {
+  margin-right: 10px;
+  margin-top: 4px;
+}
+
+.address-info {
+  flex-grow: 1;
+}
+
+.address-info p {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.default-tag {
+  background-color: #4CAF50;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.8em;
+  margin-left: 10px;
+}
+
+.payment-options label {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.payment-options input[type="radio"] {
+  margin-right: 10px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.form-group textarea,
+.form-group input[type="number"] {
+  width: calc(100% - 10px);
+  padding: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.submit-order-button {
+  display: block;
+  width: 100%;
+  padding: 15px;
+  background-color: #e44d26;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 1.2em;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.submit-order-button:hover:not(:disabled) {
+  background-color: #c23b1f;
+}
+
+.submit-order-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: red;
+  text-align: center;
+  margin-bottom: 15px;
+  font-weight: bold;
+}
+
+.loading-message {
+  text-align: center;
+  font-size: 1.5em;
+  color: #666;
+}

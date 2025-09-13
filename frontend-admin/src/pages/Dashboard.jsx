@@ -13,6 +13,8 @@ import apiClient from '../api';
 import SalesChart from '../components/SalesChart';
 import DishRankingChart from '../components/DishRankingChart';
 import CategoryPieChart from '../components/CategoryPieChart';
+import EmployeeDashboard from '../components/EmployeeDashboard';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 
 const { Title } = Typography;
 const { RangePicker } = DatePicker;
@@ -23,19 +25,41 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
   const [dateRange, setDateRange] = useState([dayjs().subtract(29, 'days'), dayjs()]);
   const { message } = App.useApp();
+  const { currentUser } = useCurrentUser();
 
   useEffect(() => {
     const fetchStats = async () => {
-      if (!dateRange || dateRange.length !== 2) return;
+      if (!currentUser) return;
+      
       try {
         setLoading(true);
-        const startDate = dateRange[0].format('YYYY-MM-DD');
-        const endDate = dateRange[1].format('YYYY-MM-DD');
-        const response = await apiClient.get(`/admin/dashboard/overview?start=${startDate}&end=${endDate}`);
-        if (response.data && response.data.code === 200) {
-          setStats(response.data.data);
+        
+        if (currentUser.role === 'admin') {
+          // 管理员获取完整的统计数据
+          if (!dateRange || dateRange.length !== 2) return;
+          const startDate = dateRange[0].format('YYYY-MM-DD');
+          const endDate = dateRange[1].format('YYYY-MM-DD');
+          const response = await apiClient.get(`/admin/dashboard/overview?start=${startDate}&end=${endDate}`);
+          if (response.data && response.data.code === 200) {
+            setStats(response.data.data);
+          } else {
+            throw new Error(response.data.message || '获取数据格式不正确');
+          }
         } else {
-          throw new Error(response.data.message || '获取数据格式不正确');
+          // 员工获取今日订单统计
+          const response = await apiClient.get('/employee/stats/orders/today');
+          if (response.data && response.data.code === 200) {
+            // 将员工数据格式化为与管理员数据兼容的格式
+            setStats({
+              todayOrders: response.data.data.total_orders || 0,
+              todayRevenue: response.data.data.total_revenue || 0,
+              // 其他字段设为0或默认值
+              totalOrders: 0,
+              totalRevenue: 0,
+            });
+          } else {
+            throw new Error(response.data.message || '获取数据格式不正确');
+          }
         }
       } catch (e) {
         setError(e.message);
@@ -46,7 +70,7 @@ const Dashboard = () => {
     };
 
     fetchStats();
-  }, [dateRange]);
+  }, [dateRange, currentUser]);
 
   const handleDateRangeChange = (dates) => {
     if (dates) {
@@ -110,6 +134,11 @@ const Dashboard = () => {
     { label: '本月', value: [dayjs().startOf('month'), dayjs().endOf('month')] },
     { label: '近半年', value: [dayjs().subtract(6, 'months'), dayjs()] },
   ];
+
+  // 如果是员工，显示员工专用工作台
+  if (currentUser?.role === 'employee') {
+    return <EmployeeDashboard />;
+  }
 
   return (
     <div>

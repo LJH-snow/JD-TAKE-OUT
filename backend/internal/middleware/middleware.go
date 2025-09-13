@@ -105,3 +105,31 @@ func AdminRequired() gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+// EmployeeRequired 员工权限中间件（包括管理员和普通员工）
+func EmployeeRequired() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 获取用户角色
+		role, exists := c.Get("role")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"code":    401,
+				"message": "用户未认证",
+			})
+			c.Abort()
+			return
+		}
+
+		// 检查是否为员工或管理员
+		if role != "admin" && role != "employee" {
+			c.JSON(http.StatusForbidden, gin.H{
+				"code":    403,
+				"message": "需要员工权限",
+			})
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}

@@ -19,6 +19,7 @@ import {
 } from 'antd';
 import { SearchOutlined, EyeOutlined, DownloadOutlined } from '@ant-design/icons';
 import apiClient from '../api';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 import dayjs from 'dayjs';
 
 const { Option } = Select;
@@ -51,6 +52,7 @@ const OrderManagement = () => {
   const [form] = Form.useForm();
   const [exportForm] = Form.useForm();
   const { message, modal } = App.useApp();
+  const { currentUser } = useCurrentUser();
 
   const fetchOrders = async (params = {}) => {
     setLoading(true);
@@ -60,7 +62,9 @@ const OrderManagement = () => {
         pageSize: params.pageSize,
         ...params.filters,
       };
-      const response = await apiClient.get('/admin/orders', { params: queryParams });
+      const isAdmin = currentUser?.role === 'admin';
+      const endpoint = isAdmin ? '/admin/orders' : '/employee/orders';
+      const response = await apiClient.get(endpoint, { params: queryParams });
       if (response.data && response.data.code === 200) {
         setOrders(response.data.data.items);
         setPagination(prev => ({
@@ -108,7 +112,9 @@ const OrderManagement = () => {
 
   const showDetailsModal = async (id) => {
     try {
-      const response = await apiClient.get(`/admin/orders/${id}`);
+      const isAdmin = currentUser?.role === 'admin';
+      const endpoint = isAdmin ? `/admin/orders/${id}` : `/employee/orders/${id}`;
+      const response = await apiClient.get(endpoint);
       if (response.data && response.data.code === 200) {
         setSelectedOrder(response.data.data);
         setIsDetailModalVisible(true);
@@ -126,7 +132,9 @@ const OrderManagement = () => {
       content: `您确定要将此订单状态更新为 "${getStatusTag(newStatus).props.children}" 吗？`,
       onOk: async () => {
         try {
-          await apiClient.put(`/admin/orders/${orderId}/status`, { status: newStatus });
+          const isAdmin = currentUser?.role === 'admin';
+          const endpoint = isAdmin ? `/admin/orders/${orderId}/status` : `/employee/orders/${orderId}/status`;
+          await apiClient.put(endpoint, { status: newStatus });
           message.success('状态更新成功');
           fetchOrders({ page: pagination.current, pageSize: pagination.pageSize, filters: formatFilters(form.getFieldsValue()) });
         } catch (error) {
@@ -258,11 +266,13 @@ const OrderManagement = () => {
             <Space>
               <Button type="primary" htmlType="submit" icon={<SearchOutlined />}>搜索</Button>
               <Button onClick={() => { form.resetFields(); handleSearch({}); }}>重置</Button>
-              <Dropdown overlay={exportMenu}>
-                <Button icon={<DownloadOutlined />}>
-                  导出订单
-                </Button>
-              </Dropdown>
+              {currentUser?.role === 'admin' && (
+                <Dropdown overlay={exportMenu}>
+                  <Button icon={<DownloadOutlined />}>
+                    导出订单
+                  </Button>
+                </Dropdown>
+              )}
             </Space>
           </Col>
         </Row>
