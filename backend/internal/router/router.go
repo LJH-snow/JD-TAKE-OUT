@@ -238,6 +238,9 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
             user.PUT("/addressBook/:id", addressBookController.UpdateAddressBook)
             user.DELETE("/addressBook/:id", addressBookController.DeleteAddressBook)
             user.PUT("/addressBook/default/:id", addressBookController.SetDefaultAddressBook)
+
+			// User Profile
+			user.PUT("/profile", userController.UpdateCurrentUser) // 用户更新自己的信息
 		}
 	}
 
