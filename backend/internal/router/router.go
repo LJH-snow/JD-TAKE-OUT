@@ -48,6 +48,8 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 	userController := &controllers.UserController{DB: db}
 	settingController := &controllers.SettingController{DB: db}
     menuController := &controllers.MenuController{DB: db} // 补上这行
+    shoppingCartController := &controllers.ShoppingCartController{DB: db} // ADD THIS LINE
+    addressBookController := &controllers.AddressBookController{DB: db} // ADD THIS LINE
 	authController := &controllers.AuthController{
 		DB:      db,
 		Config:  cfg,
@@ -161,7 +163,7 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 				{
 					statsExport.GET("/sales", statsController.ExportSalesData)
 					statsExport.GET("/dishes", statsController.ExportDishRanking)
-					statsExport.GET("/categories", statsController.ExportCategoryStats)
+					statsExport.GET("/categories", statsController.GetCategoryStats)
 				}
 			}
 
@@ -169,12 +171,73 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 			admin.POST("/export/data", statsController.ExportData)
 		}
 
+		// 员工路由（普通员工权限）
+		employee := api.Group("/employee")
+		employee.Use(middleware.AuthRequired(jwtUtil))
+		employee.Use(middleware.EmployeeRequired())
+		{
+			// 员工个人信息
+			employee.GET("/me", authController.GetCurrentUser)
+			
+			// 订单管理（员工可查看和更新订单状态）
+			employeeOrders := employee.Group("/orders")
+			{
+				employeeOrders.GET("", orderController.ListOrders)
+				employeeOrders.GET("/:id", orderController.GetOrderByID)
+				employeeOrders.PUT("/:id/status", orderController.UpdateOrderStatus)
+			}
+
+			// 菜品查看（只读）
+			employeeDishes := employee.Group("/dishes")
+			{
+				employeeDishes.GET("", dishController.ListDishes)
+				employeeDishes.GET("/:id", dishController.GetDishByID)
+			}
+
+			// 分类查看（只读）
+			employeeCategories := employee.Group("/categories")
+			{
+				employeeCategories.GET("", categoryController.ListCategories)
+			}
+
+			// 套餐查看（只读）
+			employeeSetmeals := employee.Group("/setmeals")
+			{
+				employeeSetmeals.GET("", setmealController.ListSetmeals)
+				employeeSetmeals.GET("/:id", setmealController.GetSetmealByID)
+			}
+
+			// 基础统计查看
+			employeeStats := employee.Group("/stats")
+			{
+				employeeStats.GET("/orders/today", statsController.GetTodayOrderStats)
+			}
+		}
+
 		// 用户端路由
 		user := api.Group("/user")
+		user.Use(middleware.AuthRequired(jwtUtil)) // ADD THIS LINE
 		{
-			user.GET("/dishes", func(c *gin.Context) {
-				c.JSON(200, gin.H{"message": "User dishes endpoint"})
-			})
+            user.GET("/me", authController.GetCurrentUserForUser) // ADD THIS LINE
+			// Shopping Cart Routes
+			user.POST("/shoppingCart", shoppingCartController.AddShoppingCart)
+			user.GET("/shoppingCart", shoppingCartController.GetShoppingCart)
+			user.PUT("/shoppingCart", shoppingCartController.UpdateShoppingCart)
+			user.DELETE("/shoppingCart/:id", shoppingCartController.RemoveShoppingCart)
+			user.DELETE("/shoppingCart/clear", shoppingCartController.ClearShoppingCart)
+            user.POST("/orders", orderController.SubmitOrder) // ADD THIS LINE
+			user.GET("/orders", orderController.ListUserOrders)
+			user.GET("/orders/:id", orderController.GetUserOrderByID)      // 获取订单详情
+			user.POST("/orders/:id/cancel", orderController.CancelOrder)    // 取消订单
+			user.POST("/orders/:id/confirm", orderController.ConfirmOrder) // 确认收货
+
+            // Address Book Routes
+            user.POST("/addressBook", addressBookController.AddAddressBook)
+            user.GET("/addressBook", addressBookController.ListAddressBooks)
+            user.GET("/addressBook/:id", addressBookController.GetAddressBookByID)
+            user.PUT("/addressBook/:id", addressBookController.UpdateAddressBook)
+            user.DELETE("/addressBook/:id", addressBookController.DeleteAddressBook)
+            user.PUT("/addressBook/default/:id", addressBookController.SetDefaultAddressBook)
 		}
 	}
 

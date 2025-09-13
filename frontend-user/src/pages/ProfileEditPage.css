@@ -1,0 +1,92 @@
+.profile-edit-page {
+  padding: 15px;
+}
+
+.edit-header {
+  display: flex;
+  align-items: center;
+  position: relative;
+  margin-bottom: 25px;
+}
+
+.edit-header h1 {
+  flex-grow: 1;
+  text-align: center;
+  font-size: 18px;
+  margin: 0;
+}
+
+.back-button {
+  position: absolute;
+  left: 0;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.edit-form .form-group {
+  margin-bottom: 20px;
+}
+
+.edit-form label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.edit-form input[type="text"] {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.edit-form input[disabled] {
+  background-color: #f5f5f5;
+  color: #999;
+}
+
+.edit-form small {
+  font-size: 12px;
+  color: #999;
+  margin-top: 5px;
+}
+
+.gender-group {
+  display: flex;
+  gap: 20px;
+}
+
+.gender-group label {
+  font-weight: normal;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.save-button {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  background-color: #1890ff;
+  color: white;
+  font-size: 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 20px;
+}
+
+.error-message {
+  color: #ff4d4f;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.success-message {
+  color: #52c41a;
+  text-align: center;
+  margin-bottom: 15px;
+}

@@ -1,0 +1,40 @@
+
+.category-menu-container {
+  width: 90px; /* 左侧菜单宽度 */
+  height: 100%;
+  background-color: #f8f8f8;
+  overflow-y: auto;
+}
+
+.category-menu-container ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.category-menu-container li {
+  padding: 15px 10px;
+  font-size: 14px;
+  color: #666;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.category-menu-container li.active {
+  background-color: #fff;
+  color: #333;
+  font-weight: bold;
+}
+
+/* 高亮时的左侧竖线 */
+.category-menu-container li.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 20px;
+  background-color: #1890ff;
+}

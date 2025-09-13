@@ -1,91 +1,98 @@
-.dish-list-layout {
-  display: flex;
-  height: 100%; /* This is now needed as its parent has a defined height */
-}
 
-.sidebar-container {
-  height: 100%;
-  overflow-y: auto;
-  border-right: 1px solid #eee;
-  --width: 85px;
-  background-color: #fff;
-}
-
-.content-container {
-  flex: 1;
+.dish-list-container {
+  flex: 1; /* 占据剩余空间 */
   height: 100%;
   overflow-y: auto;
   background-color: #fff;
+  padding: 0 15px;
 }
 
-.dish-list-header {
-  padding: 10px 12px;
-  font-size: 14px;
-  color: #333;
-  font-weight: bold;
-  background-color: #f7f8fa;
-  border-bottom: 1px solid #eee;
+.dish-group {
+  padding-top: 15px;
 }
 
-.dish-name {
-  font-size: 15px;
-  font-weight: 500;
-}
-
-.dish-price {
-  color: #fa6419;
+.category-title {
   font-size: 16px;
   font-weight: bold;
-  margin-top: 8px;
+  margin-bottom: 10px;
 }
 
-.loading-spinner {
+.dish-list-container ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.dish-item {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-  padding: 20px;
-}
-
-.dish-item-extra {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.quantity-badge {
-  background-color: #fa6419;
-  color: white;
-  font-size: 10px;
-  padding: 0 5px;
-  border-radius: 8px;
-  min-width: 16px;
-  text-align: center;
-  line-height: 16px;
-}
-
-/* Flavor Popup Styles */
-.flavor-popup-content {
-  padding: 16px;
-}
-
-.flavor-dish-name {
-  font-size: 18px;
-  font-weight: bold;
-  text-align: center;
   margin-bottom: 20px;
 }
 
-.flavor-group {
-  margin-bottom: 16px;
+.dish-image {
+  width: 100px;
+  height: 100px;
+  border-radius: 8px;
+  margin-right: 15px;
 }
 
-.flavor-group-name {
-  font-size: 14px;
-  color: #666;
+.dish-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dish-name {
+  font-size: 16px;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.dish-description {
+  font-size: 12px;
+  color: #999;
   margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.add-to-cart-btn {
-  margin-top: 20px;
+.dish-price {
+  font-size: 16px;
+  color: #ff4d4f;
+  font-weight: bold;
+  margin: 0;
+  margin-top: auto; /* Push price to the bottom */
+}
+
+.dish-controls {
+  display: flex;
+  align-items: flex-end;
+  align-self: flex-end; /* 整体垂直对齐到底部 */
+}
+
+.quantity-button {
+  width: 22px;
+  height: 22px;
+  border: 1px solid #1890ff;
+  background-color: #fff;
+  color: #1890ff;
+  border-radius: 50%;
+  font-size: 18px;
+  line-height: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quantity-button.add {
+  background-color: #1890ff;
+  color: #fff;
+}
+
+.quantity-display {
+  margin: 0 10px;
+  font-size: 16px;
+  font-weight: 500;
 }

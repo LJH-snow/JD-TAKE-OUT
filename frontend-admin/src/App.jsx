@@ -21,11 +21,14 @@ import CategoryManagement from './pages/CategoryManagement';
 import UserManagement from './pages/UserManagement';
 import StoreSettings from './pages/StoreSettings'; // Corrected import
 import LoginPage from './pages/Login';
+import ProtectedRoute from './components/ProtectedRoute';
 import apiClient from './api';
+import { parseJWTToken, getUserInfoEndpoint } from './utils/auth';
 
 const { Header, Content, Footer, Sider } = Layout;
 
-const menuItems = [
+// 管理员菜单
+const adminMenuItems = [
   { key: '/', icon: <PieChartOutlined />, label: '工作台' },
   { key: '/orders', icon: <FileOutlined />, label: '订单管理' },
   {
@@ -50,10 +53,27 @@ const menuItems = [
   { key: '/settings', icon: <SettingOutlined />, label: '店铺设置' },
 ];
 
+// 员工菜单
+const employeeMenuItems = [
+  { key: '/', icon: <PieChartOutlined />, label: '工作台' },
+  { key: '/orders', icon: <FileOutlined />, label: '订单管理' },
+  {
+    key: '/items',
+    icon: <AppstoreOutlined />,
+    label: '商品查看',
+    children: [
+      { key: '/dishes', icon: <DesktopOutlined />, label: '菜品查看' },
+      { key: '/setmeals', icon: <ShopOutlined />, label: '套餐查看' },
+      { key: '/categories', icon: <ShopOutlined />, label: '分类查看' },
+    ],
+  },
+];
+
 const App = () => {
   const [authStatus, setAuthStatus] = useState('loading'); // 状态: loading, authenticated, unauthenticated
   const [currentUser, setCurrentUser] = useState(null);
   const [storeStatus, setStoreStatus] = useState(null); // New state for store status
+  const navigate = useNavigate();
 
   useEffect(() => {
     const verifyTokenAndFetchSettings = async () => {
@@ -64,8 +84,16 @@ const App = () => {
       }
 
       try {
-        // Verify token
-        const userResponse = await apiClient.get('/admin/me');
+        // Parse token to get user role and use correct endpoint
+        const claims = parseJWTToken(token);
+        if (!claims || !claims.role) {
+          throw new Error('Invalid token');
+        }
+        
+        // Get correct API endpoint based on role
+        const endpoint = getUserInfoEndpoint(claims.role);
+        const userResponse = await apiClient.get(endpoint);
+        
         if (userResponse.data && userResponse.data.code === 200) {
           setCurrentUser(userResponse.data.data);
           setAuthStatus('authenticated');
@@ -73,23 +101,27 @@ const App = () => {
           throw new Error('Token verification failed');
         }
 
-        // Fetch store settings
-        const settingsResponse = await apiClient.get('/admin/settings');
-        if (settingsResponse.data && settingsResponse.data.code === 200) {
-          setStoreStatus(settingsResponse.data.data.is_open);
+        // Fetch store settings (only for admin users)
+        if (userResponse.data.data.role === 'admin') {
+          try {
+            const settingsResponse = await apiClient.get('/admin/settings');
+            if (settingsResponse.data && settingsResponse.data.code === 200) {
+              setStoreStatus(settingsResponse.data.data.is_open);
+            } else {
+              setStoreStatus(true);
+            }
+          } catch (settingsError) {
+            message.error('获取店铺营业状态失败');
+            setStoreStatus(true);
+          }
         } else {
-          // If settings not found, assume open by default or handle error
-          setStoreStatus(true);
+          // For employees, don't fetch store settings
+          setStoreStatus(null);
         }
 
       } catch (error) {
         localStorage.removeItem('jwt_token');
         setAuthStatus('unauthenticated');
-        // Handle error fetching settings if user is authenticated
-        if (currentUser) { // If user was authenticated but settings fetch failed
-            message.error('获取店铺营业状态失败');
-            setStoreStatus(true); // Default to open
-        }
       }
     };
 
@@ -99,21 +131,28 @@ const App = () => {
   const handleLoginSuccess = (user) => {
     setCurrentUser(user);
     setAuthStatus('authenticated');
-    // Re-fetch settings after login
-    const fetchSettingsAfterLogin = async () => {
-        try {
-            const settingsResponse = await apiClient.get('/admin/settings');
-            if (settingsResponse.data && settingsResponse.data.code === 200) {
-                setStoreStatus(settingsResponse.data.data.is_open);
-            } else {
-                setStoreStatus(true);
-            }
-        } catch (error) {
-            message.error('获取店铺营业状态失败');
-            setStoreStatus(true);
-        }
-    };
-    fetchSettingsAfterLogin();
+    // Navigate to appropriate default route based on role
+    navigate('/');
+    // Re-fetch settings after login (only for admin)
+    if (user.role === 'admin') {
+      const fetchSettingsAfterLogin = async () => {
+          try {
+              const settingsResponse = await apiClient.get('/admin/settings');
+              if (settingsResponse.data && settingsResponse.data.code === 200) {
+                  setStoreStatus(settingsResponse.data.data.is_open);
+              } else {
+                  setStoreStatus(true);
+              }
+          } catch (error) {
+              message.error('获取店铺营业状态失败');
+              setStoreStatus(true);
+          }
+      };
+      fetchSettingsAfterLogin();
+    } else {
+      // For employees, no store settings
+      setStoreStatus(null);
+    }
   };
 
   const handleLogout = () => {
@@ -127,7 +166,11 @@ const App = () => {
   if (authStatus === 'loading') {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <Spin size="large" tip="验证身份中..." />
+        <Spin size="large">
+          <div style={{ padding: '50px', textAlign: 'center', color: '#666' }}>
+            验证身份中...
+          </div>
+        </Spin>
       </div>
     );
   }
@@ -146,6 +189,14 @@ const MainLayout = ({ user, onLogout, storeStatus, setStoreStatus }) => {
   const location = useLocation();
   const { message } = AntApp.useApp(); // Get message instance from AntApp context
 
+  // 根据用户角色选择菜单
+  const menuItems = user?.role === 'admin' ? adminMenuItems : employeeMenuItems;
+  const isAdmin = user?.role === 'admin';
+
+  const handleGoHome = () => {
+    navigate('/');
+  };
+
   // Logic for menu keys
   const [openKeys, setOpenKeys] = useState([]);
 
@@ -161,7 +212,7 @@ const MainLayout = ({ user, onLogout, storeStatus, setStoreStatus }) => {
       // Optional: collapse others if a top-level item is clicked
       setOpenKeys([]);
     }
-  }, [location.pathname]);
+  }, [location.pathname, menuItems]);
 
   const handleMenuClick = (e) => {
     navigate(e.key);
@@ -209,9 +260,9 @@ const MainLayout = ({ user, onLogout, storeStatus, setStoreStatus }) => {
       </Sider>
       <Layout>
         <Header style={{ padding: '0 16px', background: colorBgContainer, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} >
-            <h2 style={{ margin: 0 }}>管理员后台</h2>
+            <h2 style={{ margin: 0 }}>{isAdmin ? '管理员后台' : '员工工作台'}</h2>
             <div style={{ display: 'flex', alignItems: 'center' }}>
-              {storeStatus !== null && (
+              {storeStatus !== null && isAdmin && (
                 <Space size="middle" style={{ marginRight: '16px' }}>
                   <span>店铺状态:</span>
                   <Switch
@@ -222,8 +273,11 @@ const MainLayout = ({ user, onLogout, storeStatus, setStoreStatus }) => {
                   />
                 </Space>
               )}
-              <Avatar style={{ backgroundColor: '#87d068', marginRight: '8px' }} icon={<UserOutlined />} />
-              <span style={{marginRight: '16px'}}>欢迎, {user?.name || '管理员'}</span>
+              <Avatar style={{ backgroundColor: isAdmin ? '#87d068' : '#1890ff', marginRight: '8px' }} icon={<UserOutlined />} />
+              <span style={{marginRight: '16px'}}>欢迎, {user?.name || (isAdmin ? '管理员' : '员工')}</span>
+              <span style={{marginRight: '16px', color: '#666', fontSize: '12px'}}>
+                ({isAdmin ? '管理员' : '员工'})
+              </span>
               <Button icon={<LogoutOutlined />} onClick={onLogout}>
                 退出登录
               </Button>
@@ -237,9 +291,30 @@ const MainLayout = ({ user, onLogout, storeStatus, setStoreStatus }) => {
               <Route path="/dishes" element={<DishManagement />} />
               <Route path="/setmeals" element={<SetmealManagement />} />
               <Route path="/categories" element={<CategoryManagement />} />
-              <Route path="/employees" element={<EmployeeManagement />} />
-              <Route path="/users" element={<UserManagement />} />
-              <Route path="/settings" element={<StoreSettings />} />
+              <Route 
+                path="/employees" 
+                element={
+                  <ProtectedRoute requiredRole="admin" userRole={user?.role} onGoHome={handleGoHome}>
+                    <EmployeeManagement />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/users" 
+                element={
+                  <ProtectedRoute requiredRole="admin" userRole={user?.role} onGoHome={handleGoHome}>
+                    <UserManagement />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/settings" 
+                element={
+                  <ProtectedRoute requiredRole="admin" userRole={user?.role} onGoHome={handleGoHome}>
+                    <StoreSettings />
+                  </ProtectedRoute>
+                } 
+              />
             </Routes>
           </div>
         </Content>

@@ -1,0 +1,102 @@
+.address-list-page {
+  padding: 20px;
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+.address-list-page h1 {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.add-address-container {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.add-address-btn {
+  display: inline-block;
+  padding: 12px 24px;
+  background-color: #007bff;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+.address-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.address-card {
+  background-color: white;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.address-card.default {
+  border-left: 4px solid #007bff;
+}
+
+.address-info {
+  flex-grow: 1;
+}
+
+.contact-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.consignee {
+  font-weight: bold;
+  font-size: 16px;
+  margin-right: 10px;
+}
+
+.phone {
+  color: #555;
+}
+
+.default-tag {
+  background-color: #007bff;
+  color: white;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-left: 10px;
+}
+
+.full-address {
+  color: #333;
+  font-size: 14px;
+  margin: 0;
+}
+
+.address-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.address-actions button {
+  background: none;
+  border: 1px solid #ccc;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.address-actions button:hover {
+  background-color: #f0f0f0;
+}
+
+.error-message {
+  color: red;
+}

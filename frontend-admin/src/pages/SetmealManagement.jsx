@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Table, Button, Space, Card, App, Image, Modal } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import apiClient from '../api';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 import SetmealForm from '../components/SetmealForm';
 
 const SetmealManagement = () => {
@@ -16,6 +17,8 @@ const SetmealManagement = () => {
   const [editingSetmeal, setEditingSetmeal] = useState(null);
 
   const { message, modal } = App.useApp();
+  const { currentUser } = useCurrentUser();
+  const isAdmin = currentUser?.role === 'admin';
 
   const fetchSetmeals = async (params = {}) => {
     setLoading(true);
@@ -24,7 +27,8 @@ const SetmealManagement = () => {
         page: params.page,
         pageSize: params.pageSize,
       };
-      const response = await apiClient.get('/admin/setmeals', { params: queryParams });
+      const endpoint = isAdmin ? '/admin/setmeals' : '/employee/setmeals';
+      const response = await apiClient.get(endpoint, { params: queryParams });
       if (response.data && response.data.code === 200) {
         setSetmeals(response.data.data.items);
         setPagination(prev => ({
@@ -72,7 +76,8 @@ const SetmealManagement = () => {
       cancelText: '取消',
       onOk: async () => {
         try {
-          const response = await apiClient.delete(`/admin/setmeals/${id}`);
+          const endpoint = `/admin/setmeals/${id}`;
+          const response = await apiClient.delete(endpoint);
           if (response.status === 200 || response.status === 204) {
             message.success('删除成功');
             // 重新获取第一页数据
@@ -100,9 +105,11 @@ const SetmealManagement = () => {
     try {
       let response;
       if (editingSetmeal) {
-        response = await apiClient.put(`/admin/setmeals/${editingSetmeal.id}`, values);
+        const endpoint = `/admin/setmeals/${editingSetmeal.id}`;
+        response = await apiClient.put(endpoint, values);
       } else {
-        response = await apiClient.post('/admin/setmeals', values);
+        const endpoint = '/admin/setmeals';
+        response = await apiClient.post(endpoint, values);
       }
 
       if (response.data && (response.data.code === 200 || response.data.code === 201)) {
@@ -149,7 +156,7 @@ const SetmealManagement = () => {
         <span>{dishes.map(d => d.name).join(', ')}</span>
       ),
     },
-    {
+    ...(isAdmin ? [{
       title: '操作',
       key: 'action',
       render: (_, record) => (
@@ -158,15 +165,17 @@ const SetmealManagement = () => {
           <Button type="primary" danger onClick={() => handleDelete(record.id)}>删除</Button>
         </Space>
       ),
-    },
+    }] : []),
   ];
 
   return (
-    <Card title="套餐管理">
+    <Card title={isAdmin ? "套餐管理" : "套餐查看"}>
       <Space style={{ marginBottom: 16 }}>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-          新增套餐
-        </Button>
+        {isAdmin && (
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+            新增套餐
+          </Button>
+        )}
       </Space>
       <Table
         columns={columns}

@@ -1,0 +1,39 @@
+.user-profile-page-container {
+  background-color: #f4f4f4;
+  min-height: 100vh;
+}
+
+.sticky-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #f0f0f0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-icon-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: #333;
+}
+
+.header-icon-link span[role="img"] {
+  font-size: 22px; /* Icon size */
+}
+
+.header-icon-link p {
+  margin: 2px 0 0 0;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.error-message {
+  color: red;
+  padding: 20px;
+}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Table, Button, Input, Space, Card, App, Image, Modal } from 'antd';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import apiClient from '../api';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 import DishForm from '../components/DishForm';
 
 const DishManagement = () => {
@@ -17,6 +18,8 @@ const DishManagement = () => {
   const [editingDish, setEditingDish] = useState(null);
 
   const { message, modal } = App.useApp();
+  const { currentUser } = useCurrentUser();
+  const isAdmin = currentUser?.role === 'admin';
 
   const fetchDishes = async (params = {}) => {
     setLoading(true);
@@ -28,7 +31,8 @@ const DishManagement = () => {
         sortField: params.sortField,
         sortOrder: params.sortOrder,
       };
-      const response = await apiClient.get('/admin/dishes', { params: queryParams });
+      const endpoint = isAdmin ? '/admin/dishes' : '/employee/dishes';
+      const response = await apiClient.get(endpoint, { params: queryParams });
       if (response.data && response.data.code === 200) {
         setDishes(response.data.data.items);
         setPagination({
@@ -83,7 +87,8 @@ const DishManagement = () => {
       cancelText: '取消',
       onOk: async () => {
         try {
-          const response = await apiClient.delete(`/admin/dishes/${id}`);
+          const endpoint = `/admin/dishes/${id}`;
+          const response = await apiClient.delete(endpoint);
           if (response.status === 204) {
             message.success('删除成功');
             fetchDishes({ page: 1, pageSize: pagination.pageSize, name: searchTerm });
@@ -102,9 +107,11 @@ const DishManagement = () => {
     try {
       let response;
       if (editingDish) {
-        response = await apiClient.put(`/admin/dishes/${editingDish.id}`, values);
+        const endpoint = `/admin/dishes/${editingDish.id}`;
+        response = await apiClient.put(endpoint, values);
       } else {
-        response = await apiClient.post('/admin/dishes', values);
+        const endpoint = '/admin/dishes';
+        response = await apiClient.post(endpoint, values);
       }
 
       if (response.data && (response.data.code === 200 || response.data.code === 201)) {
@@ -148,7 +155,7 @@ const DishManagement = () => {
       key: 'status',
       render: (status) => (status === 1 ? '在售' : '停售'),
     },
-    {
+    ...(isAdmin ? [{
       title: '操作',
       key: 'action',
       render: (_, record) => (
@@ -157,11 +164,11 @@ const DishManagement = () => {
           <Button type="primary" danger onClick={() => handleDelete(record.id)}>删除</Button>
         </Space>
       ),
-    },
+    }] : []),
   ];
 
   return (
-    <Card title="菜品管理">
+    <Card title={isAdmin ? "菜品管理" : "菜品查看"}>
       <Space style={{ marginBottom: 16 }}>
         <Input
           placeholder="输入菜品名称搜索"
@@ -172,9 +179,11 @@ const DishManagement = () => {
           onPressEnter={handleSearch}
         />
         <Button type="primary" onClick={handleSearch}>搜索</Button>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-          新增菜品
-        </Button>
+        {isAdmin && (
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+            新增菜品
+          </Button>
+        )}
       </Space>
       <Table
         columns={columns}

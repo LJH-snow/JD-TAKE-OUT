@@ -515,3 +515,82 @@ func (sc *StatsController) ExportData(c *gin.Context) {
 		},
 	})
 }
+
+// TodayOrderStats 今日订单统计数据结构
+type TodayOrderStats struct {
+	Date            string  `json:"date"`
+	TotalOrders     int     `json:"total_orders"`
+	CompletedOrders int     `json:"completed_orders"`
+	PendingOrders   int     `json:"pending_orders"`
+	CancelledOrders int     `json:"cancelled_orders"`
+	TotalRevenue    float64 `json:"total_revenue"`
+	CompletionRate  float64 `json:"completion_rate"`
+}
+
+// GetTodayOrderStats 获取今日订单统计（员工专用）
+//
+//	@Summary		获取今日订单统计
+//	@Description	获取今日订单数量、状态分布和完成率等基础统计信息，供员工查看
+//	@Tags			员工统计
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{object}	map[string]interface{}	"统计成功"
+//	@Failure		401	{object}	map[string]interface{}	"认证失败"
+//	@Failure		403	{object}	map[string]interface{}	"权限不足"
+//	@Failure		500	{object}	map[string]interface{}	"服务器错误"
+//	@Router			/api/v1/employee/stats/orders/today [get]
+func (sc *StatsController) GetTodayOrderStats(c *gin.Context) {
+	today := time.Now().Format("2006-01-02")
+	
+	var stats TodayOrderStats
+	stats.Date = today
+
+	// 查询今日订单统计
+	var totalOrders, completedOrders, pendingOrders, cancelledOrders int64
+	var totalRevenue float64
+
+	// 今日总订单数
+	sc.DB.Model(&models.Order{}).
+		Where("DATE(created_at) = ?", today).
+		Count(&totalOrders)
+
+	// 已完成订单数和总收入
+	sc.DB.Model(&models.Order{}).
+		Where("DATE(created_at) = ? AND status = ?", today, 5).
+		Count(&completedOrders)
+
+	sc.DB.Model(&models.Order{}).
+		Select("COALESCE(SUM(amount), 0)").
+		Where("DATE(created_at) = ? AND status = ?", today, 5).
+		Scan(&totalRevenue)
+
+	// 待处理订单数（待付款、待接单、制作中、派送中）
+	sc.DB.Model(&models.Order{}).
+		Where("DATE(created_at) = ? AND status IN (1, 2, 3, 4)", today).
+		Count(&pendingOrders)
+
+	// 已取消订单数
+	sc.DB.Model(&models.Order{}).
+		Where("DATE(created_at) = ? AND status = 6", today).
+		Count(&cancelledOrders)
+
+	// 计算完成率
+	var completionRate float64
+	if totalOrders > 0 {
+		completionRate = float64(completedOrders) / float64(totalOrders) * 100
+	}
+
+	stats.TotalOrders = int(totalOrders)
+	stats.CompletedOrders = int(completedOrders)
+	stats.PendingOrders = int(pendingOrders)
+	stats.CancelledOrders = int(cancelledOrders)
+	stats.TotalRevenue = totalRevenue
+	stats.CompletionRate = completionRate
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "获取今日订单统计成功",
+		"data":    stats,
+	})
+}
