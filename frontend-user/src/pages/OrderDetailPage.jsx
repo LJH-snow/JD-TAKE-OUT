@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { getOrderDetail } from '../api';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { getOrderDetail, cancelOrder, confirmOrder } from '../api';
 import DeliveryMap from '../components/DeliveryMap';
 import './OrderDetailPage.css';
 
@@ -9,51 +9,55 @@ const OrderDetailPage = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const navigate = useNavigate();
+
+  const fetchOrderDetail = async () => {
+    try {
+      setLoading(true);
+      const response = await getOrderDetail(id);
+      if (response.data && response.data.code === 200) {
+        setOrder(response.data.data);
+      } else {
+        setError(response.data.message || '获取订单详情失败');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || '加载数据失败');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchOrderDetail = async () => {
-      try {
-        setLoading(true);
-        // const response = await getOrderDetail(id); // 等待API实现
-        // mock data for frontend development
-        const response = {
-          data: {
-            code: 200,
-            data: {
-              id: id,
-              number: `SN-20250913-${id}`,
-              status: 4, // 假设为派送中
-              user_name: '测试用户',
-              phone: '13800138000',
-              address: '北京市朝阳区建国路88号',
-              order_time: new Date().toISOString(),
-              estimated_delivery_time: new Date(Date.now() + 30 * 60000).toISOString(),
-              amount: 56.00,
-              pack_amount: 2.00,
-              tableware_number: 1,
-              remark: '不要辣，谢谢！',
-              order_details: [
-                { id: 1, name: '宫保鸡丁', number: 1, amount: 28.00, image: '/images/dishes/dish1.jpg' },
-                { id: 2, name: '米饭', number: 2, amount: 4.00, image: '/images/dishes/rice.jpg' },
-              ],
-            }
-          }
-        };
-
-        if (response.data && response.data.code === 200) {
-          setOrder(response.data.data);
-        } else {
-          setError(response.data.message || '获取订单详情失败');
-        }
-      } catch (err) {
-        setError(err.response?.data?.message || '加载数据失败');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchOrderDetail();
   }, [id]);
+
+  const handleCancel = async () => {
+    if (window.confirm('您确定要取消这个订单吗？')) {
+      try {
+        await cancelOrder(id);
+        alert('订单已取消');
+        fetchOrderDetail(); // Refresh order details
+      } catch (error) {
+        alert('取消订单失败，请稍后再试');
+      }
+    }
+  };
+
+  const handleConfirm = async () => {
+    if (window.confirm('请确认您已收到商品。')) {
+      try {
+        await confirmOrder(id);
+        alert('操作成功！');
+        fetchOrderDetail(); // Refresh order details
+      } catch (error) {
+        alert('确认收货失败，请稍后再试');
+      }
+    }
+  };
+
+  const handleGoToPay = () => {
+    alert('支付功能正在开发中...');
+  };
 
   const getStatusText = (statusCode) => {
     const statusMap = { 1: '待付款', 2: '待接单', 3: '已接单', 4: '派送中', 5: '已完成', 6: '已取消' };
@@ -73,18 +77,22 @@ const OrderDetailPage = () => {
         <h1>订单详情</h1>
       </header>
 
-      {/* 配送地图/状态组件 */}
       <DeliveryMap order={order} />
 
       <div className="detail-card status-section">
         <h2>{getStatusText(order.status)}</h2>
-        <p>预计送达时间: {new Date(order.estimated_delivery_time).toLocaleTimeString()}</p>
+        {order.status === 4 && order.estimated_delivery_time && (
+          <p>预计送达时间: {new Date(order.estimated_delivery_time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</p>
+        )}
+        {order.status === 1 && (
+          <p>请在下单后30分钟内完成支付，超时订单将自动取消。</p>
+        )}
       </div>
 
       <div className="detail-card address-section">
         <h3>收货信息</h3>
         <p><strong>地址:</strong> {order.address}</p>
-        <p><strong>收货人:</strong> {order.user_name} ({order.phone})</p>
+        <p><strong>收货人:</strong> {order.consignee} ({order.phone})</p>
       </div>
 
       <div className="detail-card items-section">
@@ -107,7 +115,10 @@ const OrderDetailPage = () => {
         <div className="cost-row"><span>打包费</span><span>¥{order.pack_amount.toFixed(2)}</span></div>
         <div className="cost-row"><span>餐具费</span><span>¥{order.tableware_number.toFixed(2)}</span></div>
         <hr />
-        <div className="cost-row total"><strong>实付金额</strong><strong>¥{order.amount.toFixed(2)}</strong></div>
+        <div className="cost-row total">
+          <strong>{order.pay_status === 0 ? '应付金额' : '实付金额'}</strong>
+          <strong>¥{order.amount.toFixed(2)}</strong>
+        </div>
       </div>
 
       <div className="detail-card order-info-section">
@@ -118,9 +129,9 @@ const OrderDetailPage = () => {
       </div>
 
       <footer className="detail-footer-actions">
-        {order.status === 4 && <button className="action-button primary">确认收货</button>}
-        {order.status === 1 && <button className="action-button primary">去支付</button>}
-        {order.status === 1 && <button className="action-button secondary">取消订单</button>}
+        {order.status === 4 && <button className="action-button primary" onClick={handleConfirm}>确认收货</button>}
+        {order.status === 1 && <button className="action-button primary" onClick={handleGoToPay}>去支付</button>}
+        {order.status === 1 && <button className="action-button secondary" onClick={handleCancel}>取消订单</button>}
       </footer>
     </div>
   );

@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"jd-take-out-backend/internal/models"
+	"jd-take-out-backend/pkg/utils" // 添加这一行
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -30,6 +31,12 @@ type UpdateUserRequest struct {
 	Phone    string `json:"phone"`
 	Sex      string `json:"sex" binding:"oneof=0 1"`
 	IsActive bool   `json:"is_active"`
+}
+
+// UpdateCurrentUserRequest 定义了当前用户更新自己信息时的请求体
+type UpdateCurrentUserRequest struct {
+	Name string `json:"name" binding:"required"`
+	Sex  string `json:"sex" binding:"oneof=0 1"`
 }
 
 // ListUsers 获取用户分页列表
@@ -151,6 +158,34 @@ func (uc *UserController) UpdateUser(c *gin.Context) {
 
 	if err := uc.DB.Model(&user).Updates(updateData).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "更新用户失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "更新成功"})
+}
+
+// UpdateCurrentUser 更新当前登录用户信息
+func (uc *UserController) UpdateCurrentUser(c *gin.Context) {
+	claims, exists := c.Get("claims")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "用户未认证"})
+		return
+	}
+	userID := claims.(*utils.Claims).UserID
+
+	var req UpdateCurrentUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数校验失败: " + err.Error()})
+		return
+	}
+
+	updateData := map[string]interface{}{
+		"name": req.Name,
+		"sex":  req.Sex,
+	}
+
+	if err := uc.DB.Model(&models.User{}).Where("id = ?", userID).Updates(updateData).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "更新用户信息失败"})
 		return
 	}
 
