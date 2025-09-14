@@ -30,7 +30,7 @@ const ShoppingCartModal = ({ visible, onClose }) => {
             renderItem={item => (
               <List.Item>
                 <List.Item.Meta
-                  avatar={<Avatar shape="square" size={48} src={item.image || '/default-dish.png'} />}
+                  avatar={<Avatar shape="square" size={48} src={item.image ? (item.image.startsWith('http') ? item.image : `http://localhost:8090${item.image}`) : '/default-dish.png'} />}
                   title={<Text className="item-name">{item.name}</Text>}
                   description={<Text className="item-price">￥{item.price.toFixed(2)}</Text>}
                 />

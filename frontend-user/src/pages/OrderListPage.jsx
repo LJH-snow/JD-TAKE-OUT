@@ -99,7 +99,11 @@ const OrderCard = ({ order, onActionSuccess }) => {
       <div className="order-card-body">
         {order.order_details?.slice(0, 1).map(detail => (
           <div key={detail.id} className="item-summary">
-            <img src={detail.image || 'https://via.placeholder.com/80'} alt={detail.name} className="item-thumbnail" />
+            <img 
+              src={detail.image ? (detail.image.startsWith('http') ? detail.image : `http://localhost:8090${detail.image}`) : 'https://via.placeholder.com/80'} 
+              alt={detail.name} 
+              className="item-thumbnail" 
+            />
             <p className="item-name-brief">{detail.name} 等{order.order_details.length}件商品</p>
           </div>
         ))}

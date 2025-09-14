@@ -32,7 +32,11 @@ const DishList = forwardRef(({ menuData = [], cartQuantityMap = {}, onAddToCart,
                   const quantity = cartQuantityMap[dish.id] || 0;
                   return (
                     <li key={dish.id} className="dish-item">
-                      <img src={dish.image || 'https://via.placeholder.com/100'} alt={dish.name} className="dish-image" />
+                      <img 
+                        src={dish.image ? (dish.image.startsWith('http') ? dish.image : `http://localhost:8090${dish.image}`) : '/default-dish.png'} 
+                        alt={dish.name} 
+                        className="dish-image" 
+                      />
                       <div className="dish-details">
                         <h4 className="dish-name">{dish.name}</h4>
                         <p className="dish-description">{dish.description}</p>

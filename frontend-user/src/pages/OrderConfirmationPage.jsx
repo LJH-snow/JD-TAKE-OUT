@@ -113,7 +113,11 @@ const OrderConfirmationPage = () => {
           <div className="item-list">
             {cartItems.map(item => (
               <div key={item.id} className="item-card">
-                <img src={item.image} alt={item.name} className="item-image" />
+                <img 
+                  src={item.image ? (item.image.startsWith('http') ? item.image : `http://localhost:8090${item.image}`) : '/default-dish.png'} 
+                  alt={item.name} 
+                  className="item-image" 
+                />
                 <div className="item-info">
                   <p className="item-name">{item.name} {item.dish_flavor && `(${item.dish_flavor})`}</p>
                   <p className="item-price">¥{item.amount.toFixed(2)} x {item.number}</p>

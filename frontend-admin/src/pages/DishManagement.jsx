@@ -134,7 +134,17 @@ const DishManagement = () => {
       title: '图片',
       dataIndex: 'image',
       key: 'image',
-      render: (text) => <Image src={text} alt="菜品图片" width={60} height={60} style={{ objectFit: 'cover', borderRadius: '4px' }} />,
+      render: (text) => {
+        // 处理空值或无效图片URL的情况
+        if (!text) {
+          return <div style={{ width: 60, height: 60, backgroundColor: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px' }}>
+            无图片
+          </div>;
+        }
+        // 将相对路径转换为完整URL
+        const imageUrl = text.startsWith('http') ? text : `http://localhost:8090${text}`;
+        return <Image src={imageUrl} alt="菜品图片" width={60} height={60} style={{ objectFit: 'cover', borderRadius: '4px' }} />;
+      },
     },
     { title: '菜品名称', dataIndex: 'name', key: 'name', sorter: true },
     {
@@ -199,7 +209,7 @@ const DishManagement = () => {
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <DishForm 
           initialValues={editingDish}

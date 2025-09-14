@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Form, Input, InputNumber, Select, Button, message, Space } from 'antd';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Form, Input, InputNumber, Select, Button, message, Space, Upload } from 'antd';
+import { PlusOutlined } from '@ant-design/icons'; // Import PlusOutlined for the upload button
 import apiClient from '../api';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 
@@ -11,6 +12,24 @@ const DishForm = ({ initialValues, onFormSubmit, onCancel }) => {
   const [loading, setLoading] = useState(false);
   const { currentUser } = useCurrentUser();
   const isAdmin = currentUser?.role === 'admin';
+
+  const transformedInitialValues = useMemo(() => {
+    if (initialValues && initialValues.image) { // Only process if initialValues and image exist
+      const imageUrl = initialValues.image.startsWith('http') ? initialValues.image : `http://localhost:8090${initialValues.image}`;
+      const fileName = imageUrl.substring(imageUrl.lastIndexOf('/') + 1);
+      return {
+        ...initialValues,
+        image: [{
+          uid: imageUrl, // Use URL as uid for uniqueness
+          name: fileName,
+          status: 'done',
+          url: imageUrl
+        }],
+      };
+    }
+    // Always return an object with image as an empty array if no valid initial image
+    return { ...initialValues, status: 1, image: [] };
+  }, [initialValues]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -30,17 +49,36 @@ const DishForm = ({ initialValues, onFormSubmit, onCancel }) => {
   }, []);
 
   useEffect(() => {
-    if (initialValues) {
-      form.setFieldsValue(initialValues);
-    } else {
+    if (!initialValues) { // Only reset if it's a new form
       form.resetFields();
+      form.setFieldsValue({ status: 1, image: [] }); // Default to open and empty image
     }
   }, [initialValues, form]);
 
   const handleSubmit = async (values) => {
     setLoading(true);
     try {
-      await onFormSubmit(values);
+      let imageUrl = '';
+      
+      // 处理新上传的图片
+      if (Array.isArray(values.image) && values.image.length > 0) {
+        const imageFile = values.image[0];
+        
+        // 如果是新上传的文件（有response）
+        if (imageFile.response && imageFile.response.code === 200) {
+          imageUrl = imageFile.response.data.url;
+        }
+        // 如果是已存在的文件（有url属性）
+        else if (imageFile.url) {
+          imageUrl = imageFile.url;
+        }
+      }
+      // 如果image是字符串类型（兼容旧数据）
+      else if (typeof values.image === 'string') {
+        imageUrl = values.image;
+      }
+
+      await onFormSubmit({ ...values, image: imageUrl });
     } catch (error) {
       // Error is handled by parent
     } finally {
@@ -49,7 +87,7 @@ const DishForm = ({ initialValues, onFormSubmit, onCancel }) => {
   };
 
   return (
-    <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={{status: 1, ...initialValues}}>
+    <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={transformedInitialValues}>
       <Form.Item
         name="name"
         label="菜品名称"
@@ -79,10 +117,50 @@ const DishForm = ({ initialValues, onFormSubmit, onCancel }) => {
       </Form.Item>
       <Form.Item
         name="image"
-        label="图片链接"
-        rules={[{ type: 'url', message: '请输入有效的URL' }]}
+        label="菜品图片"
+        valuePropName="fileList"
+        getValueFromEvent={(e) => {
+          if (Array.isArray(e)) {
+            return e;
+          }
+          return e && e.fileList;
+        }}
+        rules={[{ required: true, message: '请上传菜品图片!' }]}
       >
-        <Input placeholder="请输入图片的URL" />
+        <Upload
+          name="file"
+          action="http://localhost:8090/api/v1/upload?type=dish" // Backend upload endpoint
+          listType="picture-card"
+          maxCount={1}
+          showUploadList={{ showPreviewIcon: true, showRemoveIcon: true }} // Explicitly show preview and remove icons
+          headers={{
+            Authorization: `Bearer ${localStorage.getItem('jwt_token')}`, // Include JWT token
+          }}
+          beforeUpload={(file) => {
+            const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/gif' || file.type === 'image/webp';
+            if (!isJpgOrPng) {
+              message.error('只能上传 JPG/PNG/GIF/WEBP 格式的图片!');
+            }
+            const isLt5M = file.size / 1024 / 1024 < 5; // 5MB limit
+            if (!isLt5M) {
+              message.error('图片大小不能超过 5MB!');
+            }
+            return isJpgOrPng && isLt5M;
+          }}
+          onChange={({ fileList }) => {
+            // Always update the form field with the fileList array
+            form.setFieldsValue({ image: fileList });
+          }}
+          onRemove={() => {
+            form.setFieldsValue({ image: [] }); // Clear image on remove
+            return true;
+          }}
+        >
+          <div>
+            <PlusOutlined />
+            <div style={{ marginTop: 8 }}>上传</div>
+          </div>
+        </Upload>
       </Form.Item>
       <Form.Item
         name="description"

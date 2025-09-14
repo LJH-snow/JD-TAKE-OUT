@@ -30,11 +30,10 @@ const CategoryForm = ({ initialValues, onFormSubmit, onCancel }) => {
       layout="vertical"
       onFinish={handleSubmit}
       initialValues={{
-        status: true, // 默认为启用
         sort: 0,
         type: 1, // 默认为菜品分类
+        status: initialValues ? initialValues.status === 1 : true, // 默认为启用
         ...initialValues,
-        status: initialValues ? initialValues.status === 1 : true,
       }}
     >
       <Form.Item

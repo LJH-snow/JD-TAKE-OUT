@@ -1,7 +1,7 @@
 .store-header-container {
   width: 100%;
   position: relative;
-  min-height: 190px; /* Ensure it contains the absolutely positioned info card */
+  min-height: 250px; /* 增加高度以适应新的布局 */
 }
 
 .store-cover {
@@ -13,7 +13,7 @@
 
 .store-info-card {
   position: absolute;
-  top: 60px; /* Adjusted to reduce gap with user status and overlap cover more */
+  top: 120px; /* 调整位置，避免阻挡视频 */
   left: 15px;
   right: 15px;
   background: #fff;

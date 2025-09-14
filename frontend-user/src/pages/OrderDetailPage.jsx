@@ -99,7 +99,11 @@ const OrderDetailPage = () => {
         <h3>商品清单</h3>
         {order.order_details.map(item => (
           <div key={item.id} className="item-row">
-            <img src={item.image || 'https://via.placeholder.com/60'} alt={item.name} className="item-image" />
+            <img 
+              src={item.image ? (item.image.startsWith('http') ? item.image : `http://localhost:8090${item.image}`) : '/default-dish.png'} 
+              alt={item.name} 
+              className="item-image" 
+            />
             <div className="item-info">
               <p className="item-name">{item.name}</p>
               <p className="item-quantity">x {item.number}</p>

@@ -26,7 +26,7 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 		AllowAllOrigins:  true,
 		// AllowOrigins:     []string{"http://localhost:5173", "http://localhost:5174", "http://10.0.2.2:5173"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-Requested-With"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
@@ -55,10 +55,12 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 		Config:  cfg,
 		JWTUtil: jwtUtil,
 	}
+        uploadController := &controllers.UploadController{} // Initialize UploadController
 
 	// API路由组
 	api := r.Group("/api/v1")
 	{
+            api.POST("/upload", uploadController.UploadFile) // Add upload route
 
 		// =====================================================================
 		// =================== PUBLIC ROUTES (NO AUTH REQUIRED) =================
@@ -254,6 +256,9 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 			c.Redirect(302, "/swagger/index.html")
 		})
 	}
+
+	// Serve static files from the uploads directory
+	r.Static("/uploads", ".//backend//uploads")
 
 	return r
 }

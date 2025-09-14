@@ -179,7 +179,11 @@ const App = () => {
     return <LoginPage onLoginSuccess={handleLoginSuccess} />;
   }
 
-  return <MainLayout user={currentUser} onLogout={handleLogout} storeStatus={storeStatus} setStoreStatus={setStoreStatus} />;
+    return (
+    <AntApp> {/* Wrap MainLayout with AntApp */}
+      <MainLayout user={currentUser} onLogout={handleLogout} storeStatus={storeStatus} setStoreStatus={setStoreStatus} />
+    </AntApp>
+  );
 };
 
 const MainLayout = ({ user, onLogout, storeStatus, setStoreStatus }) => {

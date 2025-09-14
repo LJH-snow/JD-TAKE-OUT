@@ -258,7 +258,7 @@ const OrderManagement = () => {
         <Row gutter={16}>
           <Col span={6}><Form.Item name="number" label="订单号"><Input placeholder="输入订单号" /></Form.Item></Col>
           <Col span={6}><Form.Item name="phone" label="用户手机号"><Input placeholder="输入手机号" /></Form.Item></Col>
-          <Col span={6}><Form.Item name="status" label="订单状态"><Select placeholder="选择状态" allowClear><Option value={2}>待接单</Option><Option value={3}>已接单</Option><Option value={4}>派送中</Option><Option value={5}>已完成</Option><Option value={6}>已取消</Option></Select></Form.Item></Col>
+          <Col span={6}><Form.Item name="status" label="订单状态"><Select placeholder="选择状态" allowClear><Option value={1}>待付款</Option><Option value={2}>待接单</Option><Option value={3}>已接单</Option><Option value={4}>派送中</Option><Option value={5}>已完成</Option><Option value={6}>已取消</Option></Select></Form.Item></Col>
           <Col span={6}><Form.Item name="dateRange" label="下单日期"><RangePicker style={{ width: '100%' }} /></Form.Item></Col>
         </Row>
         <Row>

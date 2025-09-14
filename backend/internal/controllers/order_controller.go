@@ -28,6 +28,17 @@ type ListOrdersRequest struct {
 	DateTo   string `form:"date_to"`
 }
 
+// AdminListOrdersRequest 管理员/员工列表请求参数 (针对单个状态筛选)
+type AdminListOrdersRequest struct {
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"pageSize,default=10"`
+	Status   int    `form:"status"` // Changed to single int
+	Number   string `form:"number"`
+	Phone    string `form:"phone"`
+	DateFrom string `form:"date_from"`
+	DateTo   string `form:"date_to"`
+}
+
 // UpdateOrderStatusRequest 更新订单状态请求
 type UpdateOrderStatusRequest struct {
 	Status int `json:"status" binding:"required,oneof=3 4 5 6"` // 3:已接单 4:派送中 5:已完成 6:已取消
@@ -43,7 +54,7 @@ type SubmitOrderRequest struct {
 
 // ListOrders 获取订单分页列表
 func (oc *OrderController) ListOrders(c *gin.Context) {
-	var req ListOrdersRequest
+	var req AdminListOrdersRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数绑定失败: " + err.Error()})
 		return
@@ -55,8 +66,8 @@ func (oc *OrderController) ListOrders(c *gin.Context) {
 	db := oc.DB.Model(&models.Order{})
 
 	// 应用筛选
-	if len(req.Status) > 0 {
-		db = db.Where("status IN (?)", req.Status)
+	if req.Status > 0 {
+		db = db.Where("status = ?", req.Status)
 	}
 	if req.Number != "" {
 		db = db.Where("number LIKE ?", "%"+req.Number+"%")
