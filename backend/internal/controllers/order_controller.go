@@ -46,10 +46,10 @@ type UpdateOrderStatusRequest struct {
 
 // SubmitOrderRequest 提交订单请求
 type SubmitOrderRequest struct {
-	AddressBookID uint   `json:"address_book_id" binding:"required"`
-	PayMethod     int    `json:"pay_method" binding:"required,oneof=1 2"` // 1:微信支付 2:支付宝
-	Remark        string `json:"remark"`
-	TablewareNumber int  `json:"tableware_number"` // 餐具数量
+	AddressBookID   uint   `json:"address_book_id" binding:"required"`
+	PayMethod       int    `json:"pay_method" binding:"required,oneof=1 2"` // 1:微信支付 2:支付宝
+	Remark          string `json:"remark"`
+	TablewareNumber int    `json:"tableware_number"` // 餐具数量
 }
 
 // ListOrders 获取订单分页列表
@@ -217,19 +217,19 @@ func (oc *OrderController) SubmitOrder(c *gin.Context) {
 
 	// 6. 创建订单
 	order := models.Order{
-		Number:        orderNumber,
-		Status:        models.OrderStatusPending, // 待付款
-		UserID:        userID,
-		AddressBookID: req.AddressBookID,
-		OrderTime:     time.Now(),
-		PayMethod:     req.PayMethod,
-		PayStatus:     models.PayStatusUnpaid, // 默认未支付
-		Amount:        totalAmount,
-		Remark:        req.Remark,
-		Phone:         addressBook.Phone,
-		Address:       addressBook.Detail, // 简化处理，实际可能需要拼接完整地址
-		UserName:      userClaims.Username, // 从claims获取用户名
-		Consignee:     addressBook.Consignee,
+		Number:          orderNumber,
+		Status:          models.OrderStatusPending, // 待付款
+		UserID:          userID,
+		AddressBookID:   req.AddressBookID,
+		OrderTime:       time.Now(),
+		PayMethod:       req.PayMethod,
+		PayStatus:       models.PayStatusUnpaid, // 默认未支付
+		Amount:          totalAmount,
+		Remark:          req.Remark,
+		Phone:           addressBook.Phone,
+		Address:         addressBook.Detail,  // 简化处理，实际可能需要拼接完整地址
+		UserName:        userClaims.Username, // 从claims获取用户名
+		Consignee:       addressBook.Consignee,
 		TablewareNumber: req.TablewareNumber,
 		TablewareStatus: 1, // 默认1
 	}
@@ -382,12 +382,12 @@ func (oc *OrderController) ExportOrders(c *gin.Context) {
 
 // exportExcel 生成并写入Excel文件流
 func (oc *OrderController) exportExcel(c *gin.Context, orders []models.Order) {
-    // ... function body
+	// ... function body
 }
 
 // exportCSV 生成并写入CSV文件流
 func (oc *OrderController) exportCSV(c *gin.Context, orders []models.Order) {
-    // ... function body
+	// ... function body
 }
 
 // --- MVP API IMPLEMENTATIONS ---
@@ -440,8 +440,8 @@ func (oc *OrderController) CancelOrder(c *gin.Context) {
 	}
 
 	updateData := map[string]interface{}{
-		"status":      models.OrderStatusCancelled,
-		"cancel_time": time.Now(),
+		"status":        models.OrderStatusCancelled,
+		"cancel_time":   time.Now(),
 		"cancel_reason": "用户自行取消",
 	}
 
@@ -486,4 +486,172 @@ func (oc *OrderController) ConfirmOrder(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "操作成功"})
+}
+
+// DeleteOrderByAdmin 管理端软删除订单
+func (oc *OrderController) DeleteOrderByAdmin(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "无效的ID格式"})
+		return
+	}
+	if err := oc.DB.Delete(&models.Order{}, id).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "删除订单失败"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
+}
+
+// DeleteOrderByUser 用户删除自己的订单（仅限已完成/已取消）
+func (oc *OrderController) DeleteOrderByUser(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "无效的ID格式"})
+		return
+	}
+
+	claims, _ := c.Get("claims")
+	userID := claims.(*utils.Claims).UserID
+
+	var order models.Order
+	// 先按ID查询，便于区分“不存在/已删除”与“非本人订单”
+	if err := oc.DB.First(&order, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "订单未找到或已删除"})
+		return
+	}
+
+	if order.UserID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"code": 403, "message": "该订单不属于当前用户，无法删除"})
+		return
+	}
+
+	if order.Status != models.OrderStatusCompleted && order.Status != models.OrderStatusCancelled {
+		c.JSON(http.StatusForbidden, gin.H{"code": 403, "message": "仅支持删除已完成或已取消的订单"})
+		return
+	}
+
+	if err := oc.DB.Delete(&order).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "删除订单失败"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
+}
+
+// GetUserOrderStatusCounts 获取当前用户按状态分组的订单数量
+func (oc *OrderController) GetUserOrderStatusCounts(c *gin.Context) {
+	claims, exists := c.Get("claims")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "用户未认证"})
+		return
+	}
+	userClaims := claims.(*utils.Claims)
+
+	type CountRow struct {
+		Status int   `json:"status"`
+		Count  int64 `json:"count"`
+	}
+
+	var rows []CountRow
+	if err := oc.DB.Table("orders").
+		Select("status, COUNT(*) as count").
+		Where("user_id = ?", userClaims.UserID).
+		Group("status").
+		Find(&rows).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "统计订单数量失败"})
+		return
+	}
+
+	counts := map[string]int64{
+		"pending":    0,
+		"waiting":    0,
+		"confirmed":  0,
+		"delivering": 0,
+		"completed":  0,
+		"cancelled":  0,
+		"refunded":   0,
+		"all":        0,
+	}
+
+	var total int64 = 0
+	for _, r := range rows {
+		total += r.Count
+		switch r.Status {
+		case models.OrderStatusPending:
+			counts["pending"] = r.Count
+		case models.OrderStatusWaiting:
+			counts["waiting"] = r.Count
+		case models.OrderStatusConfirmed:
+			counts["confirmed"] = r.Count
+		case models.OrderStatusDelivering:
+			counts["delivering"] = r.Count
+		case models.OrderStatusCompleted:
+			counts["completed"] = r.Count
+		case models.OrderStatusCancelled:
+			counts["cancelled"] = r.Count
+		case models.OrderStatusRefunded:
+			counts["refunded"] = r.Count
+		}
+	}
+	counts["all"] = total
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "获取成功",
+		"data":    counts,
+	})
+}
+
+// GetUserOrderStats 获取当前用户在日期范围内的订单统计
+// 返回总金额、订单数以及每日聚合数据
+func (oc *OrderController) GetUserOrderStats(c *gin.Context) {
+	claims, exists := c.Get("claims")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "用户未认证"})
+		return
+	}
+	userClaims := claims.(*utils.Claims)
+
+	dateFrom := c.DefaultQuery("date_from", "")
+	dateTo := c.DefaultQuery("date_to", "")
+
+	type StatRow struct {
+		SaleDate    string  `json:"date"`
+		OrderCount  int64   `json:"order_count"`
+		TotalAmount float64 `json:"amount"`
+	}
+
+	// 构建基础查询
+	db := oc.DB.Table("orders").
+		Select("DATE(order_time) as sale_date, COUNT(*) as order_count, SUM(amount) as total_amount").
+		Where("user_id = ?", userClaims.UserID).
+		Where("pay_status = ?", models.PayStatusPaid)
+
+	if dateFrom != "" && dateTo != "" {
+		db = db.Where("order_time BETWEEN ? AND ?", dateFrom+" 00:00:00", dateTo+" 23:59:59")
+	}
+
+	db = db.Group("DATE(order_time)").Order("sale_date ASC")
+
+	var rows []StatRow
+	if err := db.Find(&rows).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "统计查询失败"})
+		return
+	}
+
+	var totalAmount float64 = 0
+	var orderCount int64 = 0
+	for _, r := range rows {
+		totalAmount += r.TotalAmount
+		orderCount += r.OrderCount
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "获取成功",
+		"data": gin.H{
+			"total_amount": totalAmount,
+			"order_count":  orderCount,
+			"daily":        rows,
+		},
+	})
 }

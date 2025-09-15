@@ -77,6 +77,74 @@
   gap: 10px;
 }
 
+.filters {
+  background: #fff;
+  padding: 10px 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.date-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.date-range input[type="date"] {
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.date-range button {
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.quick-ranges {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.quick-ranges .qr-btn {
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  background: #fafafa;
+  border-radius: 16px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.quick-ranges .qr-btn.active {
+  background: #1890ff;
+  color: #fff;
+  border-color: #1890ff;
+}
+
+.stats-cards {
+  display: flex;
+  gap: 10px;
+}
+
+.stat-card {
+  background: #fafafa;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.chart-placeholder {
+  background: #fff;
+  padding: 10px 12px;
+  border-top: 1px solid #f0f0f0;
+}
+
 .order-card-link {
   display: block;
   background-color: #fff;

@@ -19,6 +19,7 @@ import FaqPage from './pages/FaqPage';
 import AccountSecurityPage from './pages/AccountSecurityPage';
 import PrivacySettingsPage from './pages/PrivacySettingsPage';
 import AboutUsPage from './pages/AboutUsPage';
+import OrderSuccessPage from './pages/OrderSuccessPage';
 
 function App() {
   return (
@@ -38,6 +39,7 @@ function App() {
           <Route path="/profile/edit" element={<ProfileEditPage />} />
           <Route path="/orders" element={<OrderListPage />} />
           <Route path="/orders/:id" element={<OrderDetailPage />} />
+          <Route path="/order/success" element={<OrderSuccessPage />} />
           
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/settings/account-security" element={<AccountSecurityPage />} />

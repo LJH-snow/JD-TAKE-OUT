@@ -5,7 +5,7 @@ import (
 	"jd-take-out-backend/internal/controllers"
 	"jd-take-out-backend/internal/middleware"
 	"jd-take-out-backend/pkg/utils"
-	
+
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -23,7 +23,7 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 	// CORS中间件
 	r.Use(cors.New(cors.Config{
 		// 在开发环境中允许所有来源，方便调试
-		AllowAllOrigins:  true,
+		AllowAllOrigins: true,
 		// AllowOrigins:     []string{"http://localhost:5173", "http://localhost:5174", "http://10.0.2.2:5173"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-Requested-With"},
@@ -47,20 +47,20 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 	employeeController := &controllers.EmployeeController{DB: db}
 	userController := &controllers.UserController{DB: db}
 	settingController := &controllers.SettingController{DB: db}
-    menuController := &controllers.MenuController{DB: db} // 补上这行
-    shoppingCartController := &controllers.ShoppingCartController{DB: db} // ADD THIS LINE
-    addressBookController := &controllers.AddressBookController{DB: db} // ADD THIS LINE
+	menuController := &controllers.MenuController{DB: db}                 // 补上这行
+	shoppingCartController := &controllers.ShoppingCartController{DB: db} // ADD THIS LINE
+	addressBookController := &controllers.AddressBookController{DB: db}   // ADD THIS LINE
 	authController := &controllers.AuthController{
 		DB:      db,
 		Config:  cfg,
 		JWTUtil: jwtUtil,
 	}
-        uploadController := &controllers.UploadController{} // Initialize UploadController
+	uploadController := &controllers.UploadController{} // Initialize UploadController
 
 	// API路由组
 	api := r.Group("/api/v1")
 	{
-            api.POST("/upload", uploadController.UploadFile) // Add upload route
+		api.POST("/upload", uploadController.UploadFile) // Add upload route
 
 		// =====================================================================
 		// =================== PUBLIC ROUTES (NO AUTH REQUIRED) =================
@@ -120,7 +120,8 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 				orders.GET("", orderController.ListOrders)
 				orders.GET("/:id", orderController.GetOrderByID)
 				orders.PUT("/:id/status", orderController.UpdateOrderStatus)
-				orders.GET("/export", orderController.ExportOrders) // 新增导出路由
+				orders.GET("/export", orderController.ExportOrders)       // 新增导出路由
+				orders.DELETE("/:id", orderController.DeleteOrderByAdmin) // 软删除订单
 			}
 
 			// 套餐管理
@@ -180,7 +181,7 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 		{
 			// 员工个人信息
 			employee.GET("/me", authController.GetCurrentUser)
-			
+
 			// 订单管理（员工可查看和更新订单状态）
 			employeeOrders := employee.Group("/orders")
 			{
@@ -220,26 +221,29 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 		user := api.Group("/user")
 		user.Use(middleware.AuthRequired(jwtUtil)) // ADD THIS LINE
 		{
-            user.GET("/me", authController.GetCurrentUserForUser) // ADD THIS LINE
+			user.GET("/me", authController.GetCurrentUserForUser) // ADD THIS LINE
 			// Shopping Cart Routes
 			user.POST("/shoppingCart", shoppingCartController.AddShoppingCart)
 			user.GET("/shoppingCart", shoppingCartController.GetShoppingCart)
 			user.PUT("/shoppingCart", shoppingCartController.UpdateShoppingCart)
 			user.DELETE("/shoppingCart/:id", shoppingCartController.RemoveShoppingCart)
 			user.DELETE("/shoppingCart/clear", shoppingCartController.ClearShoppingCart)
-            user.POST("/orders", orderController.SubmitOrder) // ADD THIS LINE
+			user.POST("/orders", orderController.SubmitOrder) // ADD THIS LINE
 			user.GET("/orders", orderController.ListUserOrders)
+			user.GET("/orders/counts", orderController.GetUserOrderStatusCounts)
+			user.GET("/orders/stats", orderController.GetUserOrderStats)
 			user.GET("/orders/:id", orderController.GetUserOrderByID)      // 获取订单详情
-			user.POST("/orders/:id/cancel", orderController.CancelOrder)    // 取消订单
+			user.POST("/orders/:id/cancel", orderController.CancelOrder)   // 取消订单
 			user.POST("/orders/:id/confirm", orderController.ConfirmOrder) // 确认收货
+			user.DELETE("/orders/:id", orderController.DeleteOrderByUser)  // 用户删除订单(软删)
 
-            // Address Book Routes
-            user.POST("/addressBook", addressBookController.AddAddressBook)
-            user.GET("/addressBook", addressBookController.ListAddressBooks)
-            user.GET("/addressBook/:id", addressBookController.GetAddressBookByID)
-            user.PUT("/addressBook/:id", addressBookController.UpdateAddressBook)
-            user.DELETE("/addressBook/:id", addressBookController.DeleteAddressBook)
-            user.PUT("/addressBook/default/:id", addressBookController.SetDefaultAddressBook)
+			// Address Book Routes
+			user.POST("/addressBook", addressBookController.AddAddressBook)
+			user.GET("/addressBook", addressBookController.ListAddressBooks)
+			user.GET("/addressBook/:id", addressBookController.GetAddressBookByID)
+			user.PUT("/addressBook/:id", addressBookController.UpdateAddressBook)
+			user.DELETE("/addressBook/:id", addressBookController.DeleteAddressBook)
+			user.PUT("/addressBook/default/:id", addressBookController.SetDefaultAddressBook)
 
 			// User Profile
 			user.PUT("/profile", userController.UpdateCurrentUser) // 用户更新自己的信息

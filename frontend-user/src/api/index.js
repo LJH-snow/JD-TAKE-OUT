@@ -197,6 +197,30 @@ export const confirmOrder = (id) => {
 };
 
 /**
+ * 删除用户订单（仅限已完成/已取消）
+ */
+export const deleteUserOrder = (id) => {
+  return apiClient.delete(`/user/orders/${id}`);
+};
+
+/**
+ * 获取当前用户订单统计（日期范围）
+ * @param {{date_from?: string, date_to?: string}} params
+ */
+export const getUserOrderStats = (params) => {
+  return apiClient.get('/user/orders/stats', { params });
+};
+
+/**
+ * 获取当前用户订单状态数量
+ * 返回示例:
+ * { pending, waiting, confirmed, delivering, completed, cancelled, refunded, all }
+ */
+export const getUserOrderCounts = () => {
+  return apiClient.get('/user/orders/counts');
+};
+
+/**
  * 更新当前用户信息
  * @param {{name, sex}} userData 
  */

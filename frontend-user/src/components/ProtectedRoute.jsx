@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getMe } from '../api';
@@ -10,6 +10,8 @@ const ProtectedRoute = () => {
   const [isTokenValid, setIsTokenValid] = useState(true); // 默认为 true，避免闪烁
   const [isLoading, setIsLoading] = useState(true);
 
+  const verifiedRef = useRef(false);
+
   useEffect(() => {
     const verifyToken = async () => {
       if (!auth.token) {
@@ -19,7 +21,29 @@ const ProtectedRoute = () => {
       }
 
       try {
-        await getMe(); // 尝试调用受保护的 API
+        if (verifiedRef.current) {
+          setIsTokenValid(true);
+          setIsLoading(false);
+          return;
+        }
+
+        const res = await getMe(); // 尝试调用受保护的 API
+        if (res?.data?.code === 200 && res?.data?.data) {
+          // 仅在与现有用户信息不同的时候才更新，避免引发无限循环
+          const serverUser = res.data.data;
+          const currentUser = auth.user || {};
+          const changed = (
+            serverUser.id !== currentUser.id ||
+            serverUser.name !== currentUser.name ||
+            serverUser.phone !== currentUser.phone ||
+            serverUser.avatar !== currentUser.avatar ||
+            serverUser.sex !== currentUser.sex
+          );
+          if (changed) {
+            auth.updateUser(serverUser);
+          }
+        }
+        verifiedRef.current = true;
         setIsTokenValid(true);
       } catch (error) {
         if (error.response && error.response.status === 401) {
@@ -33,7 +57,7 @@ const ProtectedRoute = () => {
     };
 
     verifyToken();
-  }, [auth]); // 依赖 auth 对象，以便在 logout 后能重新评估
+  }, [auth.token]); // 仅在 token 变化时验证，避免因 user 更新导致重复请求
 
   if (isLoading) {
     // 在验证期间，可以显示一个加载指示器

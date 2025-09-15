@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { getUserOrderCounts } from '../api/index';
 import './MyOrdersCard.css';
 
 // 假设的图标组件，实际项目中应替换为真实的图标库（如 antd/icons）
@@ -18,23 +19,17 @@ const MyOrdersCard = () => {
   useEffect(() => {
     const fetchOrderStatusCounts = async () => {
       try {
-        // 注意：此API后端尚未实现，此处为前端预备代码
-        // const response = await apiClient.get('/api/user/orders/status-counts');
-        // if (response.data && response.data.code === 200) {
-        //   setOrderCounts(response.data.data);
-        // }
-
-        // --- 使用模拟数据 --- (后端API就绪后请删除此部分)
-        const mockData = {
-          pendingPayment: 2, // 待付款
-          pendingShipment: 0, // 待发货
-          delivering: 1, // 待收货
-          pendingReview: 3, // 待评价
-          refund: 0, // 退款/售后
-        };
-        setOrderCounts(mockData);
-        // --- 模拟数据结束 ---
-
+        const res = await getUserOrderCounts();
+        if (res?.data?.code === 200 && res?.data?.data) {
+          const d = res.data.data;
+          setOrderCounts({
+            pendingPayment: d.pending || 0,
+            pendingShipment: d.waiting || 0,
+            delivering: d.delivering || 0,
+            pendingReview: d.completed || 0,
+            refund: d.refunded || 0,
+          });
+        }
       } catch (error) {
         console.error("获取订单状态数量失败:", error);
       }

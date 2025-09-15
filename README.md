@@ -146,6 +146,9 @@ CREATE DATABASE jd_take_out;
 - `POST /api/v1/auth/register` - 用户注册
 - `POST /api/v1/auth/refresh` - 刷新Token
 
+### 用户端接口
+- `GET /api/v1/user/orders/counts` - 获取当前用户按订单状态的数量统计
+
 ### 统计分析接口 (需要管理员权限)
 - `GET /api/v1/admin/dashboard/overview` - 工作台概览 **🔥使用真实数据**
 - `GET /api/v1/admin/stats/sales` - 销售趋势 **🔥使用真实数据**

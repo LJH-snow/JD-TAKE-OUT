@@ -35,8 +35,9 @@ type UpdateUserRequest struct {
 
 // UpdateCurrentUserRequest 定义了当前用户更新自己信息时的请求体
 type UpdateCurrentUserRequest struct {
-	Name string `json:"name" binding:"required"`
-	Sex  string `json:"sex" binding:"oneof=0 1"`
+	Name   string `json:"name" binding:"required"`
+	Sex    string `json:"sex" binding:"oneof=0 1"`
+	Avatar string `json:"avatar"`
 }
 
 // ListUsers 获取用户分页列表
@@ -180,8 +181,9 @@ func (uc *UserController) UpdateCurrentUser(c *gin.Context) {
 	}
 
 	updateData := map[string]interface{}{
-		"name": req.Name,
-		"sex":  req.Sex,
+		"name":   req.Name,
+		"sex":    req.Sex,
+		"avatar": req.Avatar,
 	}
 
 	if err := uc.DB.Model(&models.User{}).Where("id = ?", userID).Updates(updateData).Error; err != nil {

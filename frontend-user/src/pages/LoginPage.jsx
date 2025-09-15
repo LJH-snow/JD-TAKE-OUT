@@ -23,7 +23,8 @@ const LoginPage = () => {
       if (response.data && response.data.code === 200) { // 后端成功响应码为 200
         const { user, token } = response.data.data;
         auth.login(user, token);
-        navigate(from, { replace: true }); // 跳转回之前的页面
+        // 登录成功后统一跳转到用户端首页
+        navigate('/', { replace: true });
       } else {
         setError(response.data.message || '登录失败');
       }
