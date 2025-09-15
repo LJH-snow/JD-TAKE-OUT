@@ -187,3 +187,7 @@ backend/build-errors.log
 
 # Air root config
 air.toml
+
+# Video files
+
+/frontend-user/public/videos/
