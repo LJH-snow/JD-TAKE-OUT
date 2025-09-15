@@ -1,0 +1,82 @@
+.about-us-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.about-header {
+  background: white;
+  padding: 15px;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.about-header h1 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.about-content {
+  flex-grow: 1;
+  padding: 20px;
+}
+
+.logo-container {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.app-logo {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 10px;
+}
+
+.logo-container h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.app-version {
+  font-size: 14px;
+  color: #999;
+}
+
+.about-section {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.about-section h3 {
+  margin-top: 0;
+  font-size: 16px;
+}
+
+.about-section p {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #666;
+}
+
+.links-section a {
+  display: block;
+  padding: 15px 0;
+  color: #333;
+  text-decoration: none;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.links-section a:last-child {
+  border-bottom: none;
+}
+
+.about-footer {
+  padding: 20px;
+  text-align: center;
+  font-size: 12px;
+  color: #aaa;
+}

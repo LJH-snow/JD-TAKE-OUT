@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
@@ -15,6 +14,11 @@ import './App.css';
 import OrderListPage from './pages/OrderListPage';
 import OrderDetailPage from './pages/OrderDetailPage';
 import SettingsPage from './pages/SettingsPage';
+import CustomerServicePage from './pages/CustomerServicePage';
+import FaqPage from './pages/FaqPage';
+import AccountSecurityPage from './pages/AccountSecurityPage';
+import PrivacySettingsPage from './pages/PrivacySettingsPage';
+import AboutUsPage from './pages/AboutUsPage';
 
 function App() {
   return (
@@ -23,7 +27,7 @@ function App() {
         <Route path="/" element={<StorePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        
+
         {/* 受保护的路由 */}
         <Route element={<ProtectedRoute />}>
           <Route path="/checkout" element={<OrderConfirmationPage />} />
@@ -31,10 +35,17 @@ function App() {
           <Route path="/addresses" element={<AddressListPage />} />
           <Route path="/addresses/edit/:id" element={<AddressEditPage />} />
           <Route path="/addresses/new" element={<AddressEditPage />} />
-          <Route path="/profile/edit" element={<ProfileEditPage />} /> {/* 添加新路由 */}
+          <Route path="/profile/edit" element={<ProfileEditPage />} />
           <Route path="/orders" element={<OrderListPage />} />
           <Route path="/orders/:id" element={<OrderDetailPage />} />
+          
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/settings/account-security" element={<AccountSecurityPage />} />
+          <Route path="/settings/privacy" element={<PrivacySettingsPage />} />
+          <Route path="/settings/about" element={<AboutUsPage />} />
+
+          <Route path="/support/contact" element={<CustomerServicePage />} />
+          <Route path="/support/faq" element={<FaqPage />} />
         </Route>
 
       </Routes>

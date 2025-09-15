@@ -1,8 +1,7 @@
-
 import React, { forwardRef } from 'react';
 import './DishList.css';
 
-const DishList = forwardRef(({ menuData = [], cartQuantityMap = {}, onAddToCart, onDecrement, onSelectFlavor }, ref) => {
+const DishList = forwardRef(({ menuData = [], cartQuantityMap = {}, onAddToCart, onDecrement, onSelectFlavor, isStoreOpen }, ref) => {
 
   const handleAddClick = (dish) => {
     if (dish.flavors && dish.flavors.length > 0) {
@@ -13,7 +12,6 @@ const DishList = forwardRef(({ menuData = [], cartQuantityMap = {}, onAddToCart,
   };
 
   return (
-    // **关键修复：将 ref 移到唯一的根元素上，确保它在任何时候都存在**
     <div className="dish-list-container" ref={ref}>
       {menuData.length === 0 ? (
         <p>加载中...</p>
@@ -45,11 +43,11 @@ const DishList = forwardRef(({ menuData = [], cartQuantityMap = {}, onAddToCart,
                       <div className="dish-controls">
                         {quantity > 0 && (
                           <>
-                            <button className="quantity-button" onClick={() => onDecrement(dish.id)}>-</button>
+                            <button className="quantity-button" onClick={() => onDecrement(dish.id)} disabled={!isStoreOpen}>-</button>
                             <span className="quantity-display">{quantity}</span>
                           </>
                         )}
-                        <button className="quantity-button add" onClick={() => handleAddClick(dish)}>+</button>
+                        <button className="quantity-button add" onClick={() => handleAddClick(dish)} disabled={!isStoreOpen}>+</button>
                       </div>
                     </li>
                   );

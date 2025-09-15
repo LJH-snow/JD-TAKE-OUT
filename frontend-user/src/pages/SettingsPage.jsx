@@ -1,33 +1,36 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import './SettingsPage.css';
 
 const SettingsPage = () => {
   const navigate = useNavigate();
+  const auth = useAuth();
 
   const handleLogout = () => {
-    // Clear user token from local storage
-    localStorage.removeItem('token');
-    // Redirect to login page
-    navigate('/login');
+    auth.logout();
+    navigate('/login', { replace: true });
   };
 
   return (
     <div className="settings-page">
-      <h1>设置</h1>
+      <header className="settings-header">
+        <Link to="/profile" className="back-button">&lt;</Link>
+        <h1>设置</h1>
+      </header>
       <div className="settings-section">
-        <div className="settings-item">
+        <Link to="/settings/account-security" className="settings-item">
           <span>账号安全</span>
           <span>&gt;</span>
-        </div>
-        <div className="settings-item">
+        </Link>
+        <Link to="/settings/privacy" className="settings-item">
           <span>隐私设置</span>
           <span>&gt;</span>
-        </div>
-        <div className="settings-item">
+        </Link>
+        <Link to="/settings/about" className="settings-item">
           <span>关于我们</span>
           <span>&gt;</span>
-        </div>
+        </Link>
       </div>
       <div className="logout-section">
         <button onClick={handleLogout} className="logout-button">

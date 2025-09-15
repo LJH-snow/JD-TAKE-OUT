@@ -30,12 +30,21 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
   };
 
+  const updateUser = (updatedData) => {
+    setUser(prevUser => {
+      const newUser = { ...prevUser, ...updatedData };
+      localStorage.setItem('user', JSON.stringify(newUser));
+      return newUser;
+    });
+  };
+
   const authValue = {
     user,
     token,
     isAuthenticated: !!user,
     login,
     logout,
+    updateUser, // 导出新函数
   };
 
   return (

@@ -1,9 +1,8 @@
-
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './ShoppingCartBar.css';
 
-const ShoppingCartBar = ({ isVisible, cartItems = [], onShowDetails }) => {
+const ShoppingCartBar = ({ isVisible, cartItems = [], onShowDetails, isStoreOpen }) => {
   const navigate = useNavigate();
 
   const { totalCount, totalPrice } = useMemo(() => {
@@ -22,7 +21,14 @@ const ShoppingCartBar = ({ isVisible, cartItems = [], onShowDetails }) => {
   const isCheckoutDisabled = totalPrice < minPrice || totalCount === 0;
 
   const handleCheckout = () => {
+    if (!isStoreOpen) return;
     navigate('/checkout');
+  };
+
+  const getButtonText = () => {
+    if (!isStoreOpen) return '本店已打烊';
+    if (isCheckoutDisabled && totalCount > 0) return `还差¥${(minPrice - totalPrice).toFixed(2)}`;
+    return '去结算';
   };
 
   return (
@@ -49,12 +55,10 @@ const ShoppingCartBar = ({ isVisible, cartItems = [], onShowDetails }) => {
       <div className="checkout-button-wrapper">
         <button 
           className="checkout-button" 
-          disabled={isCheckoutDisabled}
+          disabled={isCheckoutDisabled || !isStoreOpen}
           onClick={handleCheckout}
         >
-          {isCheckoutDisabled && totalCount > 0
-            ? `还差¥${(minPrice - totalPrice).toFixed(2)}`
-            : '去结算'}
+          {getButtonText()}
         </button>
       </div>
     </div>

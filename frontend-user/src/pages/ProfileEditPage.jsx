@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getMe, updateUserProfile } from '../api';
+import { getMe, updateUserProfile, uploadAvatar } from '../api';
+import { useAuth } from '../context/AuthContext';
 import './ProfileEditPage.css';
 
 const ProfileEditPage = () => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [sex, setSex] = useState('');
+  const [sex, setSex] = useState('1');
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [avatarFile, setAvatarFile] = useState(null);
 
@@ -15,28 +16,29 @@ const ProfileEditPage = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const auth = useAuth();
 
   useEffect(() => {
-    const fetchCurrentUser = async () => {
-      try {
-        const response = await getMe();
-        if (response.data && response.data.code === 200) {
-          const user = response.data.data;
-          setName(user.name || '');
-          setPhone(user.phone || '');
-          setSex(user.sex || '');
-          setAvatarPreview(user.avatar); // Set initial avatar
-        } else {
-          setError('获取用户信息失败');
-        }
-      } catch (err) {
-        setError('加载用户信息失败，请稍后重试');
-      } finally {
-        setLoading(false);
+    if (auth.user) {
+      const user = auth.user;
+      setName(user.name || '');
+      setPhone(user.phone || '');
+      setSex(user.sex || '1');
+
+      if (user.avatar) {
+        // Prepend backend base URL if the avatar URL is relative
+        const avatarUrl = user.avatar.startsWith('http') ? user.avatar : `http://localhost:8090${user.avatar}`;
+        setAvatarPreview(avatarUrl);
+      } else if (user.sex === '1') {
+        setAvatarPreview('/images/avatars/default_male.png');
+      } else if (user.sex === '0') {
+        setAvatarPreview('/images/avatars/default_female.png');
+      } else {
+        setAvatarPreview('/images/avatars/default.png');
       }
-    };
-    fetchCurrentUser();
-  }, []);
+    }
+    setLoading(false);
+  }, [auth.user]);
 
   const handleAvatarClick = () => {
     fileInputRef.current.click();
@@ -54,31 +56,43 @@ const ProfileEditPage = () => {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setLoading(true);
 
-    // In a real app, you would upload the avatarFile first if it exists
-    if (avatarFile) {
-      console.log('Uploading new avatar file:', avatarFile);
-      // const uploadResponse = await uploadAvatar(avatarFile); // API call to upload
-      // if (uploadResponse.data.code === 200) {
-      //   updatedData.avatar = uploadResponse.data.data.url; // Get new URL
-      // } else {
-      //   setError('头像上传失败');
-      //   return;
-      // }
-    }
-
-    const updatedData = { name, sex };
+    let newAvatarUrl = auth.user.avatar; // Start with the current avatar URL
 
     try {
-      const response = await updateUserProfile(updatedData);
-      if (response.data && response.data.code === 200) {
+      // Step 1: If a new file is selected, upload it first.
+      if (avatarFile) {
+        const uploadResponse = await uploadAvatar(avatarFile);
+        if (uploadResponse.data && uploadResponse.data.code === 200) {
+          newAvatarUrl = uploadResponse.data.data.url; // Get the real, persistent URL from the backend
+        } else {
+          throw new Error(uploadResponse.data.message || '头像上传失败');
+        }
+      }
+
+      // Step 2: Update user profile with name, sex, and potentially new avatar URL.
+      const updatedData = { 
+        name,
+        sex,
+        avatar: newAvatarUrl,
+      };
+
+      const profileResponse = await updateUserProfile(updatedData);
+      if (profileResponse.data && profileResponse.data.code === 200) {
         setSuccess('信息更新成功！');
+        
+        // Step 3: Update the global auth context with the latest data.
+        auth.updateUser(updatedData);
+
         setTimeout(() => navigate('/profile'), 1500);
       } else {
-        setError(response.data.message || '更新失败');
+        throw new Error(profileResponse.data.message || '更新用户信息失败');
       }
     } catch (err) {
-      setError(err.response?.data?.message || '请求失败，请稍后再试');
+      setError(err.message || '操作失败，请稍后再试');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -119,14 +133,15 @@ const ProfileEditPage = () => {
           <div className="gender-group">
             <label><input type="radio" name="sex" value="1" checked={sex === '1'} onChange={(e) => setSex(e.target.value)} /> 男</label>
             <label><input type="radio" name="sex" value="0" checked={sex === '0'} onChange={(e) => setSex(e.target.value)} /> 女</label>
-            <label><input type="radio" name="sex" value="" checked={sex === ''} onChange={(e) => setSex(e.target.value)} /> 保密</label>
           </div>
         </div>
         
         {error && <p className="error-message">{error}</p>}
         {success && <p className="success-message">{success}</p>}
 
-        <button type="submit" className="save-button">保存</button>
+        <button type="submit" className="save-button" disabled={loading}>
+          {loading ? '保存中...' : '保存'}
+        </button>
       </form>
     </div>
   );

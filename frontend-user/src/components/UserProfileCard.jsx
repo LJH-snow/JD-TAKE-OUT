@@ -10,9 +10,9 @@ const UserProfileCard = ({ user }) => {
 
   // 根据用户数据决定头像源的辅助函数
   const getAvatarSrc = (user) => {
-    // 如果用户有自定义头像，则使用自定义头像
+    // 如果用户有自定义头像，则拼接成完整URL
     if (user.avatar) {
-      return user.avatar;
+      return user.avatar.startsWith('http') ? user.avatar : `http://localhost:8090${user.avatar}`;
     }
     // 否则，根据性别使用默认头像
     if (user.sex === '1') { // 假设 '1' 代表男性

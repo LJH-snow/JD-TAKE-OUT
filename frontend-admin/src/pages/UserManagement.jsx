@@ -92,7 +92,13 @@ const UserManagement = () => {
     { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
     { title: '姓名', dataIndex: 'name', key: 'name' },
     { title: '手机号', dataIndex: 'phone', key: 'phone' },
-    { title: '性别', dataIndex: 'sex', key: 'sex', render: (sex) => (sex === '1' ? '男' : '女') },
+    { title: '性别', dataIndex: 'sex', key: 'sex', 
+      render: (sex) => {
+        if (sex === '1') return '男';
+        if (sex === '0') return '女';
+        return '保密';
+      }
+    },
     {
       title: '状态',
       dataIndex: 'is_active',

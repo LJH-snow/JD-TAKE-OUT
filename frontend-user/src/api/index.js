@@ -19,6 +19,18 @@ apiClient.interceptors.request.use(
   }
 );
 
+// 响应拦截器
+apiClient.interceptors.response.use(
+  response => {
+    // 如果响应成功，直接返回
+    return response;
+  },
+  error => {
+    // 对于所有错误，正常抛出，由调用方处理
+    return Promise.reject(error);
+  }
+);
+
 // --- API 函数定义 ---
 
 /**
@@ -190,4 +202,19 @@ export const confirmOrder = (id) => {
  */
 export const updateUserProfile = (userData) => {
   return apiClient.put('/user/profile', userData);
+};
+
+/**
+ * 上传头像文件
+ * @param {File} file 
+ */
+export const uploadAvatar = (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  return apiClient.post('/upload?type=avatar', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
 };

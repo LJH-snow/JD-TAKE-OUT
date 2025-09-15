@@ -88,47 +88,49 @@
   color: #333;
 }
 
-/* The main content will now naturally flow below the header container */
 .store-main-content {
   padding-top: 0; /* Remove padding-top as min-height handles spacing */
 }
 
-/* New styles for user status and profile button */
 .user-status-area {
   position: absolute;
-  top: 10px; /* Adjust as needed */
-  right: 10px; /* Adjust as needed */
+  top: 10px;
+  right: 10px;
   display: flex;
   align-items: center;
   gap: 10px;
-  z-index: 10; /* Ensure it's above other elements */
+  z-index: 10;
   color: white;
   font-size: 0.9em;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
 
-.user-greeting {
-  /* Basic styling for the text */
-}
-
 .profile-circle-button {
-  width: 40px; /* Larger size */
-  height: 40px; /* Larger size */
-  border-radius: 50%; /* Circular shape */
-  background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent white */
-  color: #e44d26; /* Accent color */
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.8);
+  color: #e44d26;
   border: 2px solid #e44d26;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 1.2em; /* Larger text/icon */
+  font-size: 1.2em;
   font-weight: bold;
   cursor: pointer;
   box-shadow: 0 2px 5px rgba(0,0,0,0.3);
   transition: background-color 0.2s, transform 0.2s;
+  padding: 0; /* Remove padding to make image fit */
 }
 
 .profile-circle-button:hover {
   background-color: rgba(255, 255, 255, 1);
   transform: scale(1.05);
+}
+
+.profile-circle-button img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
 }

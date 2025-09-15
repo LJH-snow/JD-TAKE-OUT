@@ -1,0 +1,107 @@
+.privacy-settings-page {
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+.privacy-header {
+  background: white;
+  padding: 15px;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.privacy-header h1 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.privacy-content {
+  padding-top: 10px;
+}
+
+.privacy-section {
+  background: white;
+  margin-top: 10px;
+}
+
+.privacy-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+}
+
+.privacy-section .privacy-item:last-child {
+  border-bottom: none;
+}
+
+.privacy-item h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: normal;
+}
+
+.privacy-item p {
+  font-size: 12px;
+  color: #999;
+  margin: 4px 0 0 0;
+}
+
+.privacy-item > span {
+  color: #ccc;
+}
+
+/* Basic Switch component styles */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 28px;
+}
+
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #2196F3;
+}
+
+input:checked + .slider:before {
+  transform: translateX(22px);
+}
+
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}

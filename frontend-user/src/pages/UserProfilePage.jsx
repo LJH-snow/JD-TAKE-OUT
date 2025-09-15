@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { getMe } from '../api';
+import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext'; // 引入 useAuth
 import './UserProfilePage.css';
 
 // 导入新创建的卡片组件
@@ -9,36 +9,11 @@ import MyOrdersCard from '../components/MyOrdersCard';
 import FeatureExpansionCard from '../components/FeatureExpansionCard';
 
 const UserProfilePage = () => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { user } = useAuth(); // 从全局 Context 获取用户数据
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        setLoading(true);
-        const response = await getMe();
-        if (response.data && response.data.code === 200) {
-          setUser(response.data.data);
-        } else {
-          setError(response.data.message || '获取用户资料失败');
-        }
-      } catch (err) {
-        setError(err.response?.data?.message || '加载数据失败，请稍后再试');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserData();
-  }, []);
-
-  if (loading) {
+  // 如果 Context 中没有 user 信息，可以显示加载中或重定向
+  if (!user) {
     return <div className="user-profile-page-container">加载中...</div>;
-  }
-
-  if (error) {
-    return <div className="user-profile-page-container error-message">错误: {error}</div>;
   }
 
   return (
@@ -55,7 +30,7 @@ const UserProfilePage = () => {
         </Link>
       </header>
 
-      {/* 用户信息卡片 */}
+      {/* 用户信息卡片，直接传递来自 Context 的 user 对象 */}
       <UserProfileCard user={user} />
 
       {/* 我的订单卡片 */}

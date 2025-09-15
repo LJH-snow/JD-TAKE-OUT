@@ -25,7 +25,7 @@ const UserForm = ({ initialValues, onFormSubmit, onCancel }) => {
   };
 
   return (
-    <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={{ sex: '1', is_active: true, ...initialValues }}>
+    <Form form={form} layout="vertical" onFinish={handleSubmit}>
       <Form.Item
         name="name"
         label="姓名"
