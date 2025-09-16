@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getAddressBookByID, addAddressBook, updateAddressBook } from '../api';
 import './AddressEditPage.css';
@@ -26,10 +26,14 @@ const AddressEditPage = () => {
   const [error, setError] = useState('');
   const [map, setMap] = useState(null);
   const [marker, setMarker] = useState(null);
-  const mapContainer = React.useRef(null);
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const mapContainer = useRef(null);
+  const placeSearchRef = useRef(null);
+  const geocoderRef = useRef(null);
 
   useEffect(() => {
-    let mapInstance, markerInstance, geocoder;
+    let mapInstance;
 
     const initialize = () => {
       if (window.AMap && mapContainer.current) {
@@ -39,14 +43,18 @@ const AddressEditPage = () => {
         });
         setMap(mapInstance);
 
-        markerInstance = new window.AMap.Marker({
+        const markerInstance = new window.AMap.Marker({
           position: mapInstance.getCenter(),
         });
         mapInstance.add(markerInstance);
         setMarker(markerInstance);
 
         window.AMap.plugin(['AMap.Geolocation', 'AMap.PlaceSearch', 'AMap.Geocoder'], () => {
-          geocoder = new window.AMap.Geocoder();
+          geocoderRef.current = new window.AMap.Geocoder();
+          placeSearchRef.current = new window.AMap.PlaceSearch({
+            map: mapInstance,
+            autoFitView: true,
+          });
 
           const geolocation = new window.AMap.Geolocation({
             enableHighAccuracy: true,
@@ -57,72 +65,18 @@ const AddressEditPage = () => {
           });
           mapInstance.addControl(geolocation);
 
-          const placeSearch = new window.AMap.PlaceSearch({
-            map: mapInstance,
-            panel: 'search-result-panel',
-            autoFitView: true,
-          });
-
-          const updateAddress = (lnglat, formattedAddress, addressComponent) => {
-            setFormData(prev => ({
-              ...prev,
-              longitude: lnglat.lng,
-              latitude: lnglat.lat,
-              province_name: addressComponent.province,
-              city_name: addressComponent.city,
-              district_name: addressComponent.district,
-              formatted_address: formattedAddress,
-            }));
-          };
-
-          const geocodePosition = (lnglat) => {
-            markerInstance.setPosition(lnglat);
-            mapInstance.setCenter(lnglat);
-            geocoder.getAddress(lnglat, (status, result) => {
-              if (status === 'complete' && result.info === 'OK') {
-                updateAddress(lnglat, result.regeocode.formattedAddress, result.regeocode.addressComponent);
-              }
-            });
-          };
-
           if (isEditing) {
-            const fetchAddress = async () => {
-              try {
-                setLoading(true);
-                const response = await getAddressBookByID(id);
-                if (response.data && response.data.code === 200) {
-                  const address = response.data.data;
-                  setFormData(address);
-                  geocodePosition([address.longitude, address.latitude]);
-                } else {
-                  setError(response.data.message || '获取地址信息失败');
-                }
-              } catch (err) {
-                setError(err.response?.data?.message || '加载数据失败');
-              } finally {
-                setLoading(false);
-              }
-            };
-            fetchAddress();
+            fetchAddressData(mapInstance, markerInstance);
           } else {
             geolocation.getCurrentPosition((status, result) => {
               if (status === 'complete' && result.info === 'OK') {
-                geocodePosition(result.position);
+                geocodePosition(result.position, mapInstance, markerInstance);
               }
             });
           }
 
-          placeSearch.on('select', (e) => {
-            geocodePosition(e.poi.location);
-          });
-
-          const searchInput = document.getElementById('search-input');
-          searchInput.addEventListener('input', () => {
-            placeSearch.search(searchInput.value);
-          });
-
           mapInstance.on('click', (e) => {
-            geocodePosition(e.lnglat);
+            geocodePosition(e.lnglat, mapInstance, markerInstance);
           });
         });
       } else {
@@ -133,11 +87,79 @@ const AddressEditPage = () => {
     initialize();
 
     return () => {
-      if (mapInstance) {
-        mapInstance.destroy();
+      if (map) {
+        map.destroy();
       }
     };
   }, [id, isEditing]);
+
+  const fetchAddressData = async (mapInstance, markerInstance) => {
+    try {
+      setLoading(true);
+      const response = await getAddressBookByID(id);
+      if (response.data && response.data.code === 200) {
+        const address = response.data.data;
+        setFormData(address);
+        const lnglat = [address.longitude, address.latitude];
+        markerInstance.setPosition(lnglat);
+        mapInstance.setCenter(lnglat);
+      } else {
+        setError(response.data.message || '获取地址信息失败');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || '加载数据失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const geocodePosition = (lnglat, mapInstance, markerInstance) => {
+    if (markerInstance) markerInstance.setPosition(lnglat);
+    if (mapInstance) mapInstance.setCenter(lnglat);
+    if (geocoderRef.current) {
+      geocoderRef.current.getAddress(lnglat, (status, result) => {
+        if (status === 'complete' && result.info === 'OK') {
+          updateFormDataWithGeocode(lnglat, result.regeocode);
+        }
+      });
+    }
+  };
+
+  const updateFormDataWithGeocode = (lnglat, regeocode) => {
+    setFormData(prev => ({
+      ...prev,
+      longitude: lnglat.lng,
+      latitude: lnglat.lat,
+      province_name: regeocode.addressComponent.province,
+      city_name: regeocode.addressComponent.city,
+      district_name: regeocode.addressComponent.district,
+      formatted_address: regeocode.formattedAddress,
+    }));
+  };
+
+  const handleSearch = (keyword) => {
+    if (placeSearchRef.current && keyword) {
+      setIsSearching(true);
+      placeSearchRef.current.search(keyword, (status, result) => {
+        if (status === 'complete' && result.poiList) {
+          setSearchResults(result.poiList.pois);
+        } else {
+          setSearchResults([]);
+        }
+      });
+    } else {
+      setSearchResults([]);
+      setIsSearching(false);
+    }
+  };
+
+  const handleSelectSearchResult = (poi) => {
+    geocodePosition(poi.location, map, marker);
+    setFormData(prev => ({ ...prev, formatted_address: poi.name }));
+    setSearchResults([]);
+    setIsSearching(false);
+    document.getElementById('search-input').value = poi.name;
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -196,8 +218,23 @@ const AddressEditPage = () => {
         <div className="form-group">
           <label>地址</label>
           <div className="search-container">
-            <input type="text" id="search-input" placeholder="输入关键字搜索地址" />
-            <div id="search-result-panel"></div>
+            <input 
+              type="text" 
+              id="search-input" 
+              placeholder="输入关键字搜索地址" 
+              onChange={(e) => handleSearch(e.target.value)}
+              onFocus={() => setIsSearching(true)}
+            />
+            {isSearching && searchResults.length > 0 && (
+              <div className="search-result-panel">
+                {searchResults.map(poi => (
+                  <div key={poi.id} className="search-result-item" onClick={() => handleSelectSearchResult(poi)}>
+                    <p className="poi-name">{poi.name}</p>
+                    <p className="poi-address">{poi.address}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <div ref={mapContainer} className="map-container"></div>
           <input type="text" name="formatted_address" value={formData.formatted_address} onChange={handleChange} placeholder="点击地图选择或手动输入地址" required />

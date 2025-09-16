@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"log"
 	"jd-take-out-backend/internal/models"
 	"net/http"
 	"strconv"
@@ -41,7 +42,8 @@ type AdminListOrdersRequest struct {
 
 // UpdateOrderStatusRequest 更新订单状态请求
 type UpdateOrderStatusRequest struct {
-	Status int `json:"status" binding:"required,oneof=3 4 5 6"` // 3:已接单 4:派送中 5:已完成 6:已取消
+	Status          int    `json:"status" binding:"required,oneof=3 4 5 6"` // 3:已接单 4:派送中 5:已完成 6:已取消
+	RejectionReason string `json:"rejection_reason"`
 }
 
 // SubmitOrderRequest 提交订单请求
@@ -50,6 +52,16 @@ type SubmitOrderRequest struct {
 	PayMethod       int    `json:"pay_method" binding:"required,oneof=1 2"` // 1:微信支付 2:支付宝
 	Remark          string `json:"remark"`
 	TablewareNumber int    `json:"tableware_number"` // 餐具数量
+}
+
+// HandleRefundRequest 处理退款申请请求
+type HandleRefundRequest struct {
+	Action string `json:"action" binding:"required,oneof=approve reject"` // approve or reject
+}
+
+// CancelOrderRequest 用户取消订单请求
+type CancelOrderRequest struct {
+	CancelReason string `json:"cancel_reason"`
 }
 
 // ListOrders 获取订单分页列表
@@ -151,6 +163,9 @@ func (oc *OrderController) UpdateOrderStatus(c *gin.Context) {
 		updateData["delivery_time"] = time.Now()
 	} else if req.Status == models.OrderStatusCancelled {
 		updateData["cancel_time"] = time.Now()
+		if req.RejectionReason != "" {
+			updateData["rejection_reason"] = req.RejectionReason
+		}
 	}
 
 	if err := oc.DB.Model(&order).Updates(updateData).Error; err != nil {
@@ -176,6 +191,7 @@ func (oc *OrderController) SubmitOrder(c *gin.Context) {
 	}
 	userClaims := claims.(*utils.Claims)
 	userID := userClaims.UserID
+	log.Printf("SubmitOrder: UserID: %d", userID)
 
 	// 1. 获取用户购物车数据
 	var shoppingCartItems []models.ShoppingCart
@@ -183,6 +199,8 @@ func (oc *OrderController) SubmitOrder(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "获取购物车失败"})
 		return
 	}
+	log.Printf("SubmitOrder: Found %d items in cart for UserID %d", len(shoppingCartItems), userID)
+
 	if len(shoppingCartItems) == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "购物车为空，无法提交订单"})
 		return
@@ -227,7 +245,7 @@ func (oc *OrderController) SubmitOrder(c *gin.Context) {
 		Amount:          totalAmount,
 		Remark:          req.Remark,
 		Phone:           addressBook.Phone,
-		Address:         addressBook.Detail,  // 简化处理，实际可能需要拼接完整地址
+		Address:         addressBook.ProvinceName + addressBook.CityName + addressBook.DistrictName + addressBook.Detail,
 		UserName:        userClaims.Username, // 从claims获取用户名
 		Consignee:       addressBook.Consignee,
 		TablewareNumber: req.TablewareNumber,
@@ -425,6 +443,12 @@ func (oc *OrderController) CancelOrder(c *gin.Context) {
 		return
 	}
 
+	var req CancelOrderRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数校验失败: " + err.Error()})
+		return
+	}
+
 	claims, _ := c.Get("claims")
 	userID := claims.(*utils.Claims).UserID
 
@@ -442,7 +466,7 @@ func (oc *OrderController) CancelOrder(c *gin.Context) {
 	updateData := map[string]interface{}{
 		"status":        models.OrderStatusCancelled,
 		"cancel_time":   time.Now(),
-		"cancel_reason": "用户自行取消",
+		"cancel_reason": req.CancelReason,
 	}
 
 	if err := oc.DB.Model(&order).Updates(updateData).Error; err != nil {
@@ -535,6 +559,162 @@ func (oc *OrderController) DeleteOrderByUser(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "删除成功"})
+}
+
+// RequestRefund 用户申请退款
+func (oc *OrderController) RequestRefund(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "无效的ID格式"})
+		return
+	}
+
+	claims, _ := c.Get("claims")
+	userID := claims.(*utils.Claims).UserID
+
+	var order models.Order
+	if err := oc.DB.Where("id = ? AND user_id = ?", id, userID).First(&order).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "订单未找到"})
+		return
+	}
+
+	// 只有待接单和已接单的订单才能申请退款
+	if order.Status != models.OrderStatusWaiting && order.Status != models.OrderStatusConfirmed {
+		c.JSON(http.StatusForbidden, gin.H{"code": 403, "message": "当前订单状态无法申请退款"})
+		return
+	}
+
+	updateData := map[string]interface{}{
+		"status": models.OrderStatusRefunding,
+	}
+
+	if err := oc.DB.Model(&order).Updates(updateData).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "申请退款失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "退款申请已提交"})
+}
+
+// HandleRefund 处理退款申请
+func (oc *OrderController) HandleRefund(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "无效的ID格式"})
+		return
+	}
+
+	var req HandleRefundRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数校验失败: " + err.Error()})
+		return
+	}
+
+	var order models.Order
+	if err := oc.DB.First(&order, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "订单未找到"})
+		return
+	}
+
+	if order.Status != models.OrderStatusRefunding {
+		c.JSON(http.StatusForbidden, gin.H{"code": 403, "message": "该订单不在退款申请中"})
+		return
+	}
+
+	var newStatus int
+	if req.Action == "approve" {
+		newStatus = models.OrderStatusRefunded
+	} else {
+		// If rejected, we need to know what status to revert to.
+		// This information is not currently stored.
+		// For simplicity, let's assume it goes back to "waiting for pickup".
+		// A better implementation would store the previous state.
+		newStatus = models.OrderStatusWaiting
+	}
+
+	updateData := map[string]interface{}{
+		"status": newStatus,
+	}
+
+	if err := oc.DB.Model(&order).Updates(updateData).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "处理退款申请失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "处理成功"})
+}
+
+// RepurchaseOrder 再次购买
+func (oc *OrderController) RepurchaseOrder(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "无效的ID格式"})
+		return
+	}
+
+	claims, _ := c.Get("claims")
+	userID := claims.(*utils.Claims).UserID
+
+	var order models.Order
+	if err := oc.DB.Preload("OrderDetails").Where("id = ? AND user_id = ?", id, userID).First(&order).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "订单未找到"})
+		return
+	}
+
+	if len(order.OrderDetails) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "订单中没有商品，无法再次购买"})
+		return
+	}
+
+	tx := oc.DB.Begin()
+	if tx.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "开启事务失败"})
+		return
+	}
+
+	for _, detail := range order.OrderDetails {
+		// 检查商品是否还存在 (简化处理，只检查dish和setmeal)
+		if detail.DishID != nil {
+			var dish models.Dish
+			if err := tx.First(&dish, detail.DishID).Error; err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "商品 " + detail.Name + " 已下架，无法购买"})
+				return
+			}
+		} else if detail.SetmealID != nil {
+			var setmeal models.Setmeal
+			if err := tx.First(&setmeal, detail.SetmealID).Error; err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "套餐 " + detail.Name + " 已下架，无法购买"})
+				return
+			}
+		}
+
+		cartItem := models.ShoppingCart{
+			Name:       detail.Name,
+			Image:      detail.Image,
+			UserID:     userID,
+			DishID:     detail.DishID,
+			SetmealID:  detail.SetmealID,
+			DishFlavor: detail.DishFlavor,
+			Number:     detail.Number,
+			Amount:     detail.Amount,
+			CreatedAt:  time.Now(),
+		}
+		log.Printf("RepurchaseOrder: Adding item to cart: %+v", cartItem)
+		if err := tx.Create(&cartItem).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "添加商品到购物车失败"})
+			return
+		}
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "提交事务失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "已将商品重新添加到购物车"})
 }
 
 // GetUserOrderStatusCounts 获取当前用户按状态分组的订单数量

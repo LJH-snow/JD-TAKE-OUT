@@ -4,6 +4,7 @@ import (
 	"jd-take-out-backend/internal/config"
 	"jd-take-out-backend/internal/controllers"
 	"jd-take-out-backend/internal/middleware"
+	"jd-take-out-backend/internal/websocket"
 	"jd-take-out-backend/pkg/utils"
 
 	"time"
@@ -56,6 +57,7 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 		JWTUtil: jwtUtil,
 	}
 	uploadController := &controllers.UploadController{} // Initialize UploadController
+	paymentController := controllers.NewPaymentController(db)
 
 	// API路由组
 	api := r.Group("/api/v1")
@@ -122,6 +124,7 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 				orders.PUT("/:id/status", orderController.UpdateOrderStatus)
 				orders.GET("/export", orderController.ExportOrders)       // 新增导出路由
 				orders.DELETE("/:id", orderController.DeleteOrderByAdmin) // 软删除订单
+				orders.PUT("/:id/refund", orderController.HandleRefund) // 处理退款申请
 			}
 
 			// 套餐管理
@@ -236,6 +239,8 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 			user.POST("/orders/:id/cancel", orderController.CancelOrder)   // 取消订单
 			user.POST("/orders/:id/confirm", orderController.ConfirmOrder) // 确认收货
 			user.DELETE("/orders/:id", orderController.DeleteOrderByUser)  // 用户删除订单(软删)
+			user.POST("/orders/:id/refund", orderController.RequestRefund) // 用户申请退款
+			user.POST("/orders/:id/repurchase", orderController.RepurchaseOrder) // 再次购买
 
 			// Address Book Routes
 			user.POST("/addressBook", addressBookController.AddAddressBook)
@@ -247,6 +252,10 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 
 			// User Profile
 			user.PUT("/profile", userController.UpdateCurrentUser) // 用户更新自己的信息
+
+			// Payment Routes
+			user.POST("/payment/submit", paymentController.PayOrder)
+			user.GET("/payment/status/:id", paymentController.QueryPaymentStatus)
 		}
 	}
 
@@ -263,6 +272,10 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 
 	// Serve static files from the uploads directory
 	r.Static("/uploads", ".//backend//uploads")
+
+	r.GET("/ws", func(c *gin.Context) {
+		websocket.ServeWs(websocket.HubInstance, c.Writer, c.Request)
+	})
 
 	return r
 }

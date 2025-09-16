@@ -21,6 +21,7 @@ import { SearchOutlined, EyeOutlined, DownloadOutlined } from '@ant-design/icons
 import apiClient from '../api';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import dayjs from 'dayjs';
+import RejectOrderModal from '../components/RejectOrderModal';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -33,6 +34,8 @@ const getStatusTag = (status) => {
     case 4: return <Tag color="processing">派送中</Tag>;
     case 5: return <Tag color="success">已完成</Tag>;
     case 6: return <Tag color="default">已取消</Tag>;
+    case 7: return <Tag color="error">已退款</Tag>;
+    case 8: return <Tag color="warning">退款中</Tag>;
     default: return <Tag>未知</Tag>;
   }
 };
@@ -47,7 +50,9 @@ const OrderManagement = () => {
   });
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
   const [isExportModalVisible, setIsExportModalVisible] = useState(false);
+  const [isRejectModalVisible, setIsRejectModalVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [orderToReject, setOrderToReject] = useState(null);
   const [exportConfig, setExportConfig] = useState({ format: 'xlsx' });
   const [form] = Form.useForm();
   const [exportForm] = Form.useForm();
@@ -127,18 +132,52 @@ const OrderManagement = () => {
   };
 
   const handleUpdateStatus = (orderId, newStatus) => {
+    if (newStatus === 6) { // Rejecting order
+      setOrderToReject(orderId);
+      setIsRejectModalVisible(true);
+    } else {
+      modal.confirm({
+        title: '确认操作',
+        content: `您确定要将此订单状态更新为 "${getStatusTag(newStatus).props.children}" 吗？`,
+        onOk: async () => {
+          try {
+            const isAdmin = currentUser?.role === 'admin';
+            const endpoint = isAdmin ? `/admin/orders/${orderId}/status` : `/employee/orders/${orderId}/status`;
+            await apiClient.put(endpoint, { status: newStatus });
+            message.success('状态更新成功');
+            fetchOrders({ page: pagination.current, pageSize: pagination.pageSize, filters: formatFilters(form.getFieldsValue()) });
+          } catch (error) {
+            message.error('状态更新失败');
+          }
+        },
+      });
+    }
+  };
+
+  const handleConfirmReject = async (reason) => {
+    try {
+      const isAdmin = currentUser?.role === 'admin';
+      const endpoint = isAdmin ? `/admin/orders/${orderToReject}/status` : `/employee/orders/${orderToReject}/status`;
+      await apiClient.put(endpoint, { status: 6, rejection_reason: reason });
+      message.success('订单已拒绝');
+      setIsRejectModalVisible(false);
+      fetchOrders({ page: pagination.current, pageSize: pagination.pageSize, filters: formatFilters(form.getFieldsValue()) });
+    } catch (error) {
+      message.error('拒单失败');
+    }
+  };
+
+  const handleRefund = (orderId, action) => {
     modal.confirm({
       title: '确认操作',
-      content: `您确定要将此订单状态更新为 "${getStatusTag(newStatus).props.children}" 吗？`,
+      content: `您确定要"${action === 'approve' ? '批准' : '拒绝'}"此退款申请吗？`,
       onOk: async () => {
         try {
-          const isAdmin = currentUser?.role === 'admin';
-          const endpoint = isAdmin ? `/admin/orders/${orderId}/status` : `/employee/orders/${orderId}/status`;
-          await apiClient.put(endpoint, { status: newStatus });
-          message.success('状态更新成功');
+          await apiClient.put(`/admin/orders/${orderId}/refund`, { action });
+          message.success('操作成功');
           fetchOrders({ page: pagination.current, pageSize: pagination.pageSize, filters: formatFilters(form.getFieldsValue()) });
         } catch (error) {
-          message.error('状态更新失败');
+          message.error('操作失败');
         }
       },
     });
@@ -148,7 +187,7 @@ const OrderManagement = () => {
     const filters = form.getFieldsValue();
     let nameParts = ['orders'];
 
-    const statusMap = { 2: '待接单', 3: '已接单', 4: '派送中', 5: '已完成', 6: '已取消' };
+    const statusMap = { 2: '待接单', 3: '已接单', 4: '派送中', 5: '已完成', 6: '已取消', 8: '退款中' };
     if (filters.status && statusMap[filters.status]) {
       nameParts.push(statusMap[filters.status]);
     }
@@ -237,9 +276,20 @@ const OrderManagement = () => {
       render: (_, record) => (
         <Space size="middle">
           <Button icon={<EyeOutlined />} onClick={() => showDetailsModal(record.id)}>详情</Button>
-          {record.status === 2 && <Button type="primary" onClick={() => handleUpdateStatus(record.id, 3)}>接单</Button>}
+          {record.status === 2 && (
+            <>
+              <Button type="primary" onClick={() => handleUpdateStatus(record.id, 3)}>接单</Button>
+              <Button danger onClick={() => handleUpdateStatus(record.id, 6)}>拒单</Button>
+            </>
+          )}
           {record.status === 3 && <Button type="primary" onClick={() => handleUpdateStatus(record.id, 4)}>派送</Button>}
           {record.status === 4 && <Button type="primary" success onClick={() => handleUpdateStatus(record.id, 5)}>完成</Button>}
+          {record.status === 8 && currentUser?.role === 'admin' && (
+            <>
+              <Button type="primary" onClick={() => handleRefund(record.id, 'approve')}>批准退款</Button>
+              <Button danger onClick={() => handleRefund(record.id, 'reject')}>拒绝退款</Button>
+            </>
+          )}
         </Space>
       ),
     },
@@ -258,7 +308,7 @@ const OrderManagement = () => {
         <Row gutter={16}>
           <Col span={6}><Form.Item name="number" label="订单号"><Input placeholder="输入订单号" /></Form.Item></Col>
           <Col span={6}><Form.Item name="phone" label="用户手机号"><Input placeholder="输入手机号" /></Form.Item></Col>
-          <Col span={6}><Form.Item name="status" label="订单状态"><Select placeholder="选择状态" allowClear><Option value={1}>待付款</Option><Option value={2}>待接单</Option><Option value={3}>已接单</Option><Option value={4}>派送中</Option><Option value={5}>已完成</Option><Option value={6}>已取消</Option></Select></Form.Item></Col>
+          <Col span={6}><Form.Item name="status" label="订单状态"><Select placeholder="选择状态" allowClear><Option value={1}>待付款</Option><Option value={2}>待接单</Option><Option value={3}>已接单</Option><Option value={4}>派送中</Option><Option value={5}>已完成</Option><Option value={6}>已取消</Option><Option value={8}>退款中</Option></Select></Form.Item></Col>
           <Col span={6}><Form.Item name="dateRange" label="下单日期"><RangePicker style={{ width: '100%' }} /></Form.Item></Col>
         </Row>
         <Row>
@@ -305,6 +355,8 @@ const OrderManagement = () => {
             <Descriptions.Item label="收货人">{selectedOrder.consignee}</Descriptions.Item>
             <Descriptions.Item label="收货地址" span={2}>{selectedOrder.address}</Descriptions.Item>
             <Descriptions.Item label="备注">{selectedOrder.remark || '无'}</Descriptions.Item>
+            {selectedOrder.cancel_reason && <Descriptions.Item label="取消原因" span={2}>{selectedOrder.cancel_reason}</Descriptions.Item>}
+            {selectedOrder.rejection_reason && <Descriptions.Item label="拒单原因" span={2}>{selectedOrder.rejection_reason}</Descriptions.Item>}
           </Descriptions>
           <h4 style={{marginTop: 16}}>菜品明细</h4>
           <Table 
@@ -315,12 +367,17 @@ const OrderManagement = () => {
             columns={[
               { title: '菜品名称', dataIndex: 'name', key: 'name' },
               { title: '数量', dataIndex: 'number', key: 'number' },
-              { title: '单价', dataIndex: 'amount', key: 'amount', render: (val, rec) => `¥${(val/rec.number).toFixed(2)}` },
-              { title: '总价', dataIndex: 'amount', key: 'total', render: (val) => `¥${val.toFixed(2)}` },
+              { title: '单价', dataIndex: 'amount', key: 'amount', render: (val) => `¥${val.toFixed(2)}` },
+              { title: '总价', key: 'total', render: (text, record) => `¥${(record.amount * record.number).toFixed(2)}` },
             ]}
           />
         </Modal>
       )}
+      <RejectOrderModal
+        visible={isRejectModalVisible}
+        onCancel={() => setIsRejectModalVisible(false)}
+        onConfirm={handleConfirmReject}
+      />
       <Modal
         title="导出设置"
         open={isExportModalVisible}

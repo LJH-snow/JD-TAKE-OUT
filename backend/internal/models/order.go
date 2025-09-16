@@ -15,6 +15,8 @@ type Order struct {
 	AddressBookID         uint           `json:"address_book_id" gorm:"not null"`            // 地址ID
 	OrderTime             time.Time      `json:"order_time" gorm:"not null"`                 // 下单时间
 	CheckoutTime          *time.Time     `json:"checkout_time"`                              // 结账时间
+	PayTime               *time.Time     `json:"pay_time"`                                  // 支付时间
+	AlipayOrderNo         string         `json:"alipay_order_no" gorm:"size:64"`             // 支付宝订单号
 	PayMethod             int            `json:"pay_method" gorm:"default:1;not null"`       // 支付方式
 	PayStatus             int            `json:"pay_status" gorm:"default:0;not null"`       // 支付状态
 	Amount                float64        `json:"amount" gorm:"type:decimal(10,2);not null"`  // 实收金额
@@ -113,6 +115,7 @@ const (
 	OrderStatusCompleted  = 5 // 已完成
 	OrderStatusCancelled  = 6 // 已取消
 	OrderStatusRefunded   = 7 // 退款
+	OrderStatusRefunding  = 8 // 申请退款中
 
 	// 支付状态
 	PayStatusUnpaid = 0 // 未支付
@@ -149,6 +152,8 @@ func (o *Order) GetStatusText() string {
 		return "已取消"
 	case OrderStatusRefunded:
 		return "已退款"
+	case OrderStatusRefunding:
+		return "退款中"
 	default:
 		return "未知状态"
 	}

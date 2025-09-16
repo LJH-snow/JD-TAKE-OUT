@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { getOrderDetail, cancelOrder, confirmOrder } from '../api';
+import { getOrderDetail, cancelOrder, confirmOrder, requestRefund } from '../api';
 import DeliveryMap from '../components/DeliveryMap';
+import PaymentModal from '../components/PaymentModal';
+import CancelOrderModal from '../components/CancelOrderModal';
 import './OrderDetailPage.css';
 
 const OrderDetailPage = () => {
@@ -9,6 +11,8 @@ const OrderDetailPage = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isPaymentModalVisible, setPaymentModalVisible] = useState(false);
+  const [isCancelModalVisible, setCancelModalVisible] = useState(false);
   const navigate = useNavigate();
 
   const fetchOrderDetail = async () => {
@@ -31,15 +35,18 @@ const OrderDetailPage = () => {
     fetchOrderDetail();
   }, [id]);
 
-  const handleCancel = async () => {
-    if (window.confirm('您确定要取消这个订单吗？')) {
-      try {
-        await cancelOrder(id);
-        alert('订单已取消');
-        fetchOrderDetail(); // Refresh order details
-      } catch (error) {
-        alert('取消订单失败，请稍后再试');
-      }
+  const handleCancel = () => {
+    setCancelModalVisible(true);
+  };
+
+  const handleConfirmCancel = async (reason) => {
+    try {
+      await cancelOrder(id, reason);
+      alert('订单已取消');
+      setCancelModalVisible(false);
+      fetchOrderDetail(); // Refresh order details
+    } catch (error) {
+      alert('取消订单失败，请稍后再试');
     }
   };
 
@@ -56,11 +63,29 @@ const OrderDetailPage = () => {
   };
 
   const handleGoToPay = () => {
-    alert('支付功能正在开发中...');
+    setPaymentModalVisible(true);
+  };
+
+  const handlePaymentSuccess = () => {
+    setPaymentModalVisible(false);
+    fetchOrderDetail(); // 支付成功后刷新订单详情
+    navigate('/orders'); // 跳转到订单列表页面
+  };
+
+  const handleRequestRefund = async () => {
+    if (window.confirm('您确定要申请退款吗？')) {
+      try {
+        await requestRefund(id);
+        alert('退款申请已提交');
+        fetchOrderDetail(); // Refresh order details
+      } catch (error) {
+        alert('申请退款失败，请稍后再试');
+      }
+    }
   };
 
   const getStatusText = (statusCode) => {
-    const statusMap = { 1: '待付款', 2: '待接单', 3: '已接单', 4: '派送中', 5: '已完成', 6: '已取消' };
+    const statusMap = { 1: '待付款', 2: '待接单', 3: '已接单', 4: '派送中', 5: '已完成', 6: '已取消', 7: '已退款', 8: '退款中' };
     return statusMap[statusCode] || '未知状态';
   };
 
@@ -130,13 +155,29 @@ const OrderDetailPage = () => {
         <p><strong>订单编号:</strong> {order.number}</p>
         <p><strong>下单时间:</strong> {new Date(order.order_time).toLocaleString()}</p>
         <p><strong>备注:</strong> {order.remark || '无'}</p>
+        {order.cancel_reason && <p><strong>取消原因:</strong> {order.cancel_reason}</p>}
+        {order.rejection_reason && <p><strong>拒单原因:</strong> {order.rejection_reason}</p>}
       </div>
 
       <footer className="detail-footer-actions">
         {order.status === 4 && <button className="action-button primary" onClick={handleConfirm}>确认收货</button>}
         {order.status === 1 && <button className="action-button primary" onClick={handleGoToPay}>去支付</button>}
         {order.status === 1 && <button className="action-button secondary" onClick={handleCancel}>取消订单</button>}
+        {(order.status === 2 || order.status === 3) && <button className="action-button secondary" onClick={handleRequestRefund}>申请退款</button>}
       </footer>
+
+      <PaymentModal
+        visible={isPaymentModalVisible}
+        order={order}
+        onCancel={() => setPaymentModalVisible(false)}
+        onPaymentSuccess={handlePaymentSuccess}
+      />
+
+      <CancelOrderModal
+        visible={isCancelModalVisible}
+        onCancel={() => setCancelModalVisible(false)}
+        onConfirm={handleConfirmCancel}
+      />
     </div>
   );
 };

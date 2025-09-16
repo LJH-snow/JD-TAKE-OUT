@@ -191,7 +191,40 @@ const MainLayout = ({ user, onLogout, storeStatus, setStoreStatus }) => {
   const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
   const navigate = useNavigate();
   const location = useLocation();
-  const { message } = AntApp.useApp(); // Get message instance from AntApp context
+  const { notification } = AntApp.useApp(); // Get notification instance from AntApp context
+
+  useEffect(() => {
+    const ws = new WebSocket('ws://localhost:8090/ws');
+
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      if (message.type === 'new_order') {
+        notification.info({
+          message: '新订单通知',
+          description: message.payload.message,
+          placement: 'topRight',
+        });
+
+        if ('speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance(message.payload.message);
+          utterance.lang = 'zh-CN';
+          window.speechSynthesis.speak(utterance);
+        }
+      }
+    };
+
+    ws.onclose = () => {
+      console.log('WebSocket connection closed');
+    };
+
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, [notification]);
 
   // 根据用户角色选择菜单
   const menuItems = user?.role === 'admin' ? adminMenuItems : employeeMenuItems;

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
-import { listUserOrders, cancelOrder, confirmOrder, getUserOrderStats, deleteUserOrder } from '../api';
+import { listUserOrders, cancelOrder, confirmOrder, getUserOrderStats, deleteUserOrder, requestRefund, repurchaseOrder } from '../api';
 import ReactECharts from 'echarts-for-react';
+import CancelOrderModal from '../components/CancelOrderModal';
 import './OrderListPage.css';
 
 // 辅助函数：从 URL 查询字符串中获取参数
@@ -39,20 +40,8 @@ const OrderStatusTabs = ({ currentStatus }) => {
   );
 };
 
-const OrderCard = ({ order, onActionSuccess }) => {
-
-  const handleCancel = async (e) => {
-    e.preventDefault(); // 阻止Link的跳转
-    if (window.confirm('您确定要取消这个订单吗？')) {
-      try {
-        await cancelOrder(order.id);
-        alert('订单已取消');
-        onActionSuccess(); // 通知父组件刷新列表
-      } catch (error) {
-        alert('取消订单失败，请稍后再试');
-      }
-    }
-  };
+const OrderCard = ({ order, onActionSuccess, onCancelClick }) => {
+  const navigate = useNavigate();
 
   const handleConfirm = async (e) => {
     e.preventDefault();
@@ -80,27 +69,58 @@ const OrderCard = ({ order, onActionSuccess }) => {
     }
   };
 
+  const handleRequestRefund = async (e) => {
+    e.preventDefault();
+    if (window.confirm('您确定要申请退款吗？')) {
+      try {
+        await requestRefund(order.id);
+        alert('退款申请已提交');
+        onActionSuccess();
+      } catch (error) {
+        alert('申请退款失败，请稍后再试');
+      }
+    }
+  };
+
+  const handleRepurchase = async (e) => {
+    e.preventDefault();
+    try {
+      await repurchaseOrder(order.id);
+      alert('已将商品添加到购物车');
+      navigate('/');
+    } catch (error) {
+      alert(error.response?.data?.message || '再次购买失败，请稍后再试');
+    }
+  };
+
   const getStatusText = (statusCode) => {
-    const statusMap = { 1: '待付款', 2: '待接单', 3: '已接单', 4: '派送中', 5: '已完成', 6: '已取消' };
+    const statusMap = { 1: '待付款', 2: '待接单', 3: '已接单', 4: '派送中', 5: '已完成', 6: '已取消', 7: '已退款', 8: '退款中' };
     return statusMap[statusCode] || '未知状态';
   };
+
+  const handleCancelClick = (e) => {
+    e.preventDefault();
+    onCancelClick(order.id);
+  }
 
   const renderActionButtons = () => {
     switch (order.status) {
       case 1: // 待付款
         return (
           <>
-            <button className="action-btn secondary" onClick={handleCancel}>取消订单</button>
-            <button className="action-btn primary">去支付</button>
+            <button className="action-btn secondary" onClick={handleCancelClick}>取消订单</button>
+            <Link to={`/orders/${order.id}`} className="action-btn primary">去支付</Link>
           </>
         );
+      case 2: // 待接单
       case 3: // 已接单
+        return <button className="action-btn secondary" onClick={handleRequestRefund}>申请退款</button>;
       case 4: // 派送中
         return <button className="action-btn primary" onClick={handleConfirm}>确认收货</button>;
       case 5: // 已完成
         return (
           <>
-            <button className="action-btn secondary">再次购买</button>
+            <button className="action-btn secondary" onClick={handleRepurchase}>再次购买</button>
             <button className="action-btn" onClick={handleDelete}>删除</button>
           </>
         );
@@ -158,6 +178,8 @@ const OrderListPage = () => {
   const [dateTo, setDateTo] = useState('');
   const [stats, setStats] = useState({ total_amount: 0, order_count: 0, daily: [] });
   const [quickRange, setQuickRange] = useState('7d'); // 7d | 30d | month | custom
+  const [isCancelModalVisible, setCancelModalVisible] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
 
   // 初始化默认日期为近7天
   useEffect(() => {
@@ -248,6 +270,22 @@ const OrderListPage = () => {
     fetchStats();
   }, [dateFrom, dateTo, refreshKey]);
 
+  const handleConfirmCancel = async (reason) => {
+    try {
+      await cancelOrder(selectedOrderId, reason);
+      alert('订单已取消');
+      setCancelModalVisible(false);
+      setRefreshKey(k => k + 1);
+    } catch (error) {
+      alert('取消订单失败，请稍后再试');
+    }
+  };
+
+  const handleCancelClick = (orderId) => {
+    setSelectedOrderId(orderId);
+    setCancelModalVisible(true);
+  };
+
   const chartOption = useMemo(() => {
     const dates = (stats.daily || []).map(d => d.date);
     const orderCounts = (stats.daily || []).map(d => d.order_count);
@@ -332,7 +370,7 @@ const OrderListPage = () => {
         {error && <p className="error-message">错误: {error}</p>}
         {!loading && !error && orders.length === 0 && <p>没有找到相关订单。</p>}
         {!loading && !error && orders.map(order => (
-          <OrderCard key={order.id} order={order} onActionSuccess={() => setRefreshKey(k => k + 1)} />
+          <OrderCard key={order.id} order={order} onActionSuccess={() => setRefreshKey(k => k + 1)} onCancelClick={handleCancelClick} />
         ))}
       </div>
       {totalPages > 1 && (
@@ -342,6 +380,11 @@ const OrderListPage = () => {
           <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>下一页</button>
         </div>
       )}
+      <CancelOrderModal
+        visible={isCancelModalVisible}
+        onCancel={() => setCancelModalVisible(false)}
+        onConfirm={handleConfirmCancel}
+      />
     </div>
   );
 };

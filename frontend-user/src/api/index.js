@@ -183,9 +183,10 @@ export const getOrderDetail = (id) => {
 /**
  * 取消订单
  * @param {string} id
+ * @param {string} reason
  */
-export const cancelOrder = (id) => {
-  return apiClient.post(`/user/orders/${id}/cancel`);
+export const cancelOrder = (id, reason) => {
+  return apiClient.post(`/user/orders/${id}/cancel`, { cancel_reason: reason });
 };
 
 /**
@@ -241,4 +242,28 @@ export const uploadAvatar = (file) => {
       'Content-Type': 'multipart/form-data',
     },
   });
+};
+
+/**
+ * 模拟支付
+ * @param {{order_number, pay_method}} paymentData
+ */
+export const submitPayment = (paymentData) => {
+  return apiClient.post('/user/payment/submit', paymentData);
+};
+
+/**
+ * 申请退款
+ * @param {string} id
+ */
+export const requestRefund = (id) => {
+  return apiClient.post(`/user/orders/${id}/refund`);
+};
+
+/**
+ * 再次购买
+ * @param {string} id
+ */
+export const repurchaseOrder = (id) => {
+  return apiClient.post(`/user/orders/${id}/repurchase`);
 };
