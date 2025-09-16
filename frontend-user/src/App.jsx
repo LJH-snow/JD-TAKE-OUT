@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { App as AntApp } from 'antd';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import StorePage from './pages/StorePage';
@@ -23,35 +24,37 @@ import OrderSuccessPage from './pages/OrderSuccessPage';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<StorePage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+    <AntApp>
+      <Router>
+        <Routes>
+          <Route path="/" element={<StorePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
 
-        {/* 受保护的路由 */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/checkout" element={<OrderConfirmationPage />} />
-          <Route path="/profile" element={<UserProfilePage />} />
-          <Route path="/addresses" element={<AddressListPage />} />
-          <Route path="/addresses/edit/:id" element={<AddressEditPage />} />
-          <Route path="/addresses/new" element={<AddressEditPage />} />
-          <Route path="/profile/edit" element={<ProfileEditPage />} />
-          <Route path="/orders" element={<OrderListPage />} />
-          <Route path="/orders/:id" element={<OrderDetailPage />} />
-          <Route path="/order/success" element={<OrderSuccessPage />} />
-          
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/settings/account-security" element={<AccountSecurityPage />} />
-          <Route path="/settings/privacy" element={<PrivacySettingsPage />} />
-          <Route path="/settings/about" element={<AboutUsPage />} />
+          {/* 受保护的路由 */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/checkout" element={<OrderConfirmationPage />} />
+            <Route path="/profile" element={<UserProfilePage />} />
+            <Route path="/addresses" element={<AddressListPage />} />
+            <Route path="/addresses/edit/:id" element={<AddressEditPage />} />
+            <Route path="/addresses/new" element={<AddressEditPage />} />
+            <Route path="/profile/edit" element={<ProfileEditPage />} />
+            <Route path="/orders" element={<OrderListPage />} />
+            <Route path="/orders/:id" element={<OrderDetailPage />} />
+            <Route path="/order/success" element={<OrderSuccessPage />} />
+            
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings/account-security" element={<AccountSecurityPage />} />
+            <Route path="/settings/privacy" element={<PrivacySettingsPage />} />
+            <Route path="/settings/about" element={<AboutUsPage />} />
 
-          <Route path="/support/contact" element={<CustomerServicePage />} />
-          <Route path="/support/faq" element={<FaqPage />} />
-        </Route>
+            <Route path="/support/contact" element={<CustomerServicePage />} />
+            <Route path="/support/faq" element={<FaqPage />} />
+          </Route>
 
-      </Routes>
-    </Router>
+        </Routes>
+      </Router>
+    </AntApp>
   );
 }
 

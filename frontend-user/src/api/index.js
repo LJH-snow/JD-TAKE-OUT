@@ -267,3 +267,11 @@ export const requestRefund = (id) => {
 export const repurchaseOrder = (id) => {
   return apiClient.post(`/user/orders/${id}/repurchase`);
 };
+
+/**
+ * 修改密码
+ * @param {{old_password, new_password}} passwordData
+ */
+export const changePassword = (passwordData) => {
+  return apiClient.put('/user/password', passwordData);
+};

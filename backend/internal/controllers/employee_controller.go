@@ -38,6 +38,8 @@ type UpdateEmployeeRequest struct {
 	Status   int    `json:"status" binding:"oneof=0 1"`
 }
 
+
+
 // ListEmployees 获取员工分页列表
 // @Summary      获取员工分页列表
 // @Description  根据分页和筛选条件获取员工列表
@@ -284,4 +286,47 @@ func (ec *EmployeeController) DeleteEmployee(c *gin.Context) {
 	}
 
 	c.Status(http.StatusNoContent)
+}
+
+// ChangePassword 修改当前员工密码
+func (ec *EmployeeController) ChangePassword(c *gin.Context) {
+	claims, exists := c.Get("claims")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "用户未认证"})
+		return
+	}
+	userID := claims.(*utils.Claims).UserID
+
+	var req ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数校验失败: " + err.Error()})
+		return
+	}
+
+	var employee models.Employee
+	if err := ec.DB.First(&employee, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "员工未找到"})
+		return
+	}
+
+	// 校验旧密码
+	if !utils.CheckPassword(req.OldPassword, employee.Password) {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "旧密码不正确"})
+		return
+	}
+
+	// 哈希新密码
+	hashedPassword, err := utils.HashPassword(req.NewPassword)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "密码哈希失败"})
+		return
+	}
+
+	// 更新密码
+	if err := ec.DB.Model(&employee).Update("password", hashedPassword).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "更新密码失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "密码修改成功"})
 }

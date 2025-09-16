@@ -1,25 +1,22 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Form, Input, Button, message } from 'antd';
-import { changePassword } from '../api';
-import { useAuth } from '../context/AuthContext';
-import './AccountSecurityPage.css';
+import { useNavigate } from 'react-router-dom';
+import { Form, Input, Button, message, Card } from 'antd';
+import apiClient from '../api';
 
-const AccountSecurityPage = () => {
+const ChangePasswordPage = () => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      await changePassword({ 
+      await apiClient.put('/employee/password', { 
         old_password: values.oldPassword, 
         new_password: values.newPassword 
       });
       message.success('密码修改成功，请重新登录！');
-      logout();
+      localStorage.removeItem('jwt_token');
       navigate('/login');
     } catch (error) {
       message.error(error.response?.data?.message || '密码修改失败，请稍后再试');
@@ -29,18 +26,13 @@ const AccountSecurityPage = () => {
   };
 
   return (
-    <div className="account-security-page">
-      <header className="security-header">
-        <Link to="/settings" className="back-button">&lt;</Link>
-        <h1>修改密码</h1>
-      </header>
-      <main className="security-content">
+    <Card title="修改密码">
         <Form
           form={form}
           name="change_password"
           onFinish={onFinish}
           layout="vertical"
-          className="password-form"
+          style={{ maxWidth: 400, margin: 'auto' }}
         >
           <Form.Item
             name="oldPassword"
@@ -88,9 +80,8 @@ const AccountSecurityPage = () => {
             </Button>
           </Form.Item>
         </Form>
-      </main>
-    </div>
+    </Card>
   );
 };
 
-export default AccountSecurityPage;
+export default ChangePasswordPage;

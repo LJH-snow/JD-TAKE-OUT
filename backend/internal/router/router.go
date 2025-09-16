@@ -184,6 +184,7 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 		{
 			// 员工个人信息
 			employee.GET("/me", authController.GetCurrentUser)
+			employee.PUT("/password", employeeController.ChangePassword) // 员工修改密码
 
 			// 订单管理（员工可查看和更新订单状态）
 			employeeOrders := employee.Group("/orders")
@@ -252,6 +253,7 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 
 			// User Profile
 			user.PUT("/profile", userController.UpdateCurrentUser) // 用户更新自己的信息
+			user.PUT("/password", userController.ChangePassword) // 用户修改密码
 
 			// Payment Routes
 			user.POST("/payment/submit", paymentController.PayOrder)

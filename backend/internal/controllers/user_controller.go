@@ -40,6 +40,12 @@ type UpdateCurrentUserRequest struct {
 	Avatar string `json:"avatar"`
 }
 
+// ChangePasswordRequest 定义了修改密码时的请求体
+type ChangePasswordRequest struct {
+	OldPassword string `json:"old_password" binding:"required"`
+	NewPassword string `json:"new_password" binding:"required"`
+}
+
 // ListUsers 获取用户分页列表
 // @Summary      获取用户分页列表
 // @Description  根据分页和筛选条件获取用户列表
@@ -192,4 +198,47 @@ func (uc *UserController) UpdateCurrentUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "更新成功"})
+}
+
+// ChangePassword 修改当前用户密码
+func (uc *UserController) ChangePassword(c *gin.Context) {
+	claims, exists := c.Get("claims")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "用户未认证"})
+		return
+	}
+	userID := claims.(*utils.Claims).UserID
+
+	var req ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "参数校验失败: " + err.Error()})
+		return
+	}
+
+	var user models.User
+	if err := uc.DB.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "用户未找到"})
+		return
+	}
+
+	// 校验旧密码
+	if !utils.CheckPassword(req.OldPassword, user.Password) {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "旧密码不正确"})
+		return
+	}
+
+	// 哈希新密码
+	hashedPassword, err := utils.HashPassword(req.NewPassword)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "密码哈希失败"})
+		return
+	}
+
+	// 更新密码
+	if err := uc.DB.Model(&user).Update("password", hashedPassword).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "更新密码失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"code": 200, "message": "密码修改成功"})
 }

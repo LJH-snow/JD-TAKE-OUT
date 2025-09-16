@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   AppstoreOutlined,
   ShopOutlined,
@@ -11,7 +11,7 @@ import {
   LogoutOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
-import { Layout, Menu, theme, Button, message, Avatar, Spin, App as AntApp, Space, Switch } from 'antd';
+import { Layout, Menu, theme, Button, message, Avatar, Spin, App as AntApp, Space, Switch, Dropdown } from 'antd';
 import Dashboard from './pages/Dashboard';
 import DishManagement from './pages/DishManagement';
 import OrderManagement from './pages/OrderManagement';
@@ -20,6 +20,7 @@ import SetmealManagement from './pages/SetmealManagement';
 import CategoryManagement from './pages/CategoryManagement';
 import UserManagement from './pages/UserManagement';
 import StoreSettings from './pages/StoreSettings'; // Corrected import
+import ChangePasswordPage from './pages/ChangePasswordPage'; // Add this line
 import LoginPage from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import apiClient from './api';
@@ -310,14 +311,21 @@ const MainLayout = ({ user, onLogout, storeStatus, setStoreStatus }) => {
                   />
                 </Space>
               )}
-              <Avatar style={{ backgroundColor: isAdmin ? '#87d068' : '#1890ff', marginRight: '8px' }} icon={<UserOutlined />} />
-              <span style={{marginRight: '16px'}}>欢迎, {user?.name || (isAdmin ? '管理员' : '员工')}</span>
-              <span style={{marginRight: '16px', color: '#666', fontSize: '12px'}}>
-                ({isAdmin ? '管理员' : '员工'})
-              </span>
-              <Button icon={<LogoutOutlined />} onClick={onLogout}>
-                退出登录
-              </Button>
+              <Dropdown overlay={(
+                <Menu>
+                  <Menu.Item key="change-password">
+                    <Link to="/change-password">修改密码</Link>
+                  </Menu.Item>
+                  <Menu.Item key="logout">
+                    <a onClick={onLogout}>退出登录</a>
+                  </Menu.Item>
+                </Menu>
+              )}>
+                <a className="ant-dropdown-link" onClick={e => e.preventDefault()}>
+                  <Avatar style={{ backgroundColor: isAdmin ? '#87d068' : '#1890ff', marginRight: '8px' }} icon={<UserOutlined />} />
+                  <span style={{marginRight: '16px'}}>欢迎, {user?.name || (isAdmin ? '管理员' : '员工')}</span>
+                </a>
+              </Dropdown>
             </div>
         </Header>
         <Content style={{ margin: '16px', display: 'flex', flexDirection: 'column' }}>
@@ -352,6 +360,7 @@ const MainLayout = ({ user, onLogout, storeStatus, setStoreStatus }) => {
                   </ProtectedRoute>
                 } 
               />
+              <Route path="/change-password" element={<ChangePasswordPage />} />
             </Routes>
           </div>
         </Content>

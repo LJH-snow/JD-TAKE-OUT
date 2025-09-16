@@ -24,11 +24,9 @@ const RegisterPage = () => {
     setError('');
     try {
       const response = await registerUser({ name, phone, password, sex });
-      if (response.data && response.data.code === 1) {
-        alert('注册成功！将为您自动登录。');
-        const { user, token } = response.data.data;
-        auth.login(user, token);
-        navigate('/'); // 注册并登录后跳转到首页
+      if (response.data && response.data.code === 200) {
+        alert('注册成功！请登录。');
+        navigate('/login', { replace: true });
       } else {
         setError(response.data.message || '注册失败');
       }
