@@ -1,0 +1,79 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: jd-postgres
+    environment:
+      - POSTGRES_USER=user_pgsql
+      - POSTGRES_PASSWORD=password_ZKnm32
+      - POSTGRES_DB=jd_take_out
+    # 不对外暴露数据库端口，走内部网络
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U user_pgsql" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: jd-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - SERVER_MODE=release
+      - SERVER_PORT=8090
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_USER=user_pgsql
+      - DATABASE_PASSWORD=password_ZKnm32
+      - DATABASE_DBNAME=jd_take_out
+      - DATABASE_SSLMODE=disable
+    volumes:
+      - ./backend/uploads:/app/backend/uploads
+    # 不对外暴露后端端口，由 Caddy 反代
+
+  frontend-user:
+    build:
+      context: .
+      dockerfile: frontend-user/Dockerfile
+    container_name: jd-frontend-user
+    # 不对外暴露用户端端口，由 Caddy 反代
+    depends_on:
+      - backend
+
+  frontend-admin:
+    build:
+      context: .
+      dockerfile: frontend-admin/Dockerfile
+    container_name: jd-frontend-admin
+    # 不对外暴露管理端端口，由 Caddy 反代
+    depends_on:
+      - backend
+
+  caddy:
+    image: caddy:2.8
+    container_name: jd-caddy
+    depends_on:
+      - frontend-user
+      - frontend-admin
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
+
+

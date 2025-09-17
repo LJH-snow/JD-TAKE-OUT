@@ -1,0 +1,16 @@
+user.libai-snoe.xin {
+	encode zstd gzip
+	reverse_proxy frontend-user:80
+}
+
+admin.libai-snoe.xin {
+	encode zstd gzip
+	reverse_proxy frontend-admin:80
+}
+
+api.libai-snoe.xin {
+	encode zstd gzip
+	reverse_proxy backend:8090
+}
+
+
