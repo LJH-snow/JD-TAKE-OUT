@@ -48,8 +48,8 @@ JD-take-out/
 - **框架**: Golang + Gin
 - **数据库**: PostgreSQL
 - **ORM**: GORM v2
-- **认证**: JWT + Casbin RBAC
-- **API文档**: Swagger (规划中)
+- **认证**: JWT (Role-Based Access Control)
+- **API文档**: Swagger
 
 ### 数据库设计
 - **数据库**: PostgreSQL
@@ -71,7 +71,7 @@ JD-take-out/
 ### 环境要求
 - Node.js >= 16.0.0
 - npm >= 8.0.0
-- Go >= 1.21
+- Go >= 1.25
 - PostgreSQL >= 13
 
 ### 安装与运行
@@ -140,37 +140,42 @@ CREATE DATABASE jd_take_out;
 - 🚧 **用户评价系统**: 待开发
 - 🚧 **系统监控与日志**: 待集成更完善的监控和日志系统
 
-## 📖 相关文档
+## 🌐 API接口
 
-项目包含以下指导文档：
-- 数据库设计文档 (PostgreSQL脚本)
-- ECharts图表设计方案
-- 高德地图API集成指南
-- 完整统计系统设计文档
-- 开发环境搭建指南
+### 认证接口
+- `POST /api/v1/auth/login` - 管理员登录
+- `POST /api/v1/auth/register` - 用户注册
+- `POST /api/v1/auth/refresh` - 刷新Token
 
-## 🤝 贡献指南
+### 用户端接口
+- `GET /api/v1/user/orders/counts` - 获取当前用户按订单状态的数量统计
 
-1. Fork 本项目
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 打开 Pull Request
+### 统计分析接口 (需要管理员权限)
+- `GET /api/v1/admin/dashboard/overview` - 工作台概览 **🔥使用真实数据**
+- `GET /api/v1/admin/stats/sales` - 销售趋势 **🔥使用真实数据**
+- `GET /api/v1/admin/stats/dishes` - 菜品排行 **🔥使用真实数据**
+- `GET /api/v1/admin/stats/categories` - 分类统计 **🔥使用真实数据**
 
-## 📄 许可证
+### 健康检查
+- `GET /health` - 服务状态检查
 
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
+## 📁 项目结构
 
-## 📞 联系方式
-
-如有问题或建议，请通过以下方式联系：
-
-- 项目地址: [GitHub Repository](https://github.com/LJH-snow/JD-TAKE-OUT)
-- 问题反馈: [Issues](https://github.com/LJH-snow/JD-TAKE-OUT/issues)
-
----
-
-⭐ 项目已具备生产就绪的基础能力，欢迎Star支持！�力，欢迎Star支持！─ pkg/utils/              # 工具类
+### 后端结构 (backend/)
+```
+backend/
+├── cmd/
+│   ├── main.go              # 程序入口
+│   └── */                   # 开发工具脚本
+├── internal/
+│   ├── controllers/         # HTTP控制器
+│   ├── services/           # 业务逻辑层
+│   ├── models/             # 数据模型
+│   ├── middleware/         # 中间件
+│   ├── router/             # 路由配置
+│   ├── database/           # 数据库连接
+│   └── config/             # 配置管理
+├── pkg/utils/              # 工具类
 └── configs/                # 配置文件
 ```
 
@@ -218,29 +223,6 @@ npm run lint
 - 用户端: `http://localhost:5173`
 - 管理端: `http://localhost:5174`
 
-## 🎯 开发规划
-
-### ✅ 已完成里程碑
-- ✅ 完整的后端架构搭建
-- ✅ JWT认证系统实现
-- ✅ 统计API真实数据替换
-- ✅ 数据库表结构完善
-- ✅ 丰富测试数据生成
-
-### 🚧 进行中
-- 🚧 数据库性能优化
-- 🚧 Swagger API文档
-- 🚧 前端React + ECharts开发
-
-### 📋 待开发
-- [ ] 菜品管理CRUD API
-- [ ] 订单处理完整流程
-- [ ] 高德地图集成
-- [ ] 支付宝沙箱集成
-- [ ] 实时订单推送
-- [ ] 用户评价系统
-- [ ] 系统监控和日志
-
 ## 📖 相关文档
 
 项目包含以下指导文档：
@@ -271,4 +253,4 @@ npm run lint
 
 ---
 
-⭐ 项目已具备生产就绪的基础能力，欢迎Star支持！�力，欢迎Star支持！
+⭐ 项目已具备生产就绪的基础能力，欢迎Star支持！
