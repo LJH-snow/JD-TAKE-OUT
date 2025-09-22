@@ -246,6 +246,8 @@ func (ac *AuthController) userLogin(c *gin.Context, req UserLoginRequest) {
 				"id":    user.ID,
 				"name":  user.Name,
 				"phone": user.Phone,
+				"sex":   user.Sex,
+				"avatar": user.Avatar,
 				"role":  "user",
 			},
 		},

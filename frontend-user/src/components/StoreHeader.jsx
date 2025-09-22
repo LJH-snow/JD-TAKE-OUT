@@ -5,7 +5,7 @@ import { apiClient } from '../api';
 import './StoreHeader.css';
 
 const StoreHeader = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuth();
   const [storeInfo, setStoreInfo] = useState({
     name: '加载中...',
     announcement: '欢迎光临本店！新鲜食材，用心烹饪，为您提供美味佳肴。',
@@ -25,18 +25,12 @@ const StoreHeader = () => {
         const response = await apiClient.get('/store-settings');
         if (response.data && response.data.code === 200) {
           const fetchedSettings = response.data.data;
+          const logoUrl = fetchedSettings.logo || '/images/placeholder.png';
+          
           setStoreInfo(prevInfo => ({
             ...prevInfo,
-            name: fetchedSettings.name || prevInfo.name,
-            announcement: fetchedSettings.announcement || prevInfo.announcement,
-            description: fetchedSettings.description || prevInfo.description,
-            phone: fetchedSettings.phone || prevInfo.phone,
-            rating: fetchedSettings.rating || 4.8,
-            monthlySales: fetchedSettings.monthly_sales || 1280,
-            minPrice: fetchedSettings.min_price || 20,
-            deliveryFee: fetchedSettings.delivery_fee || 5,
-            deliveryTime: fetchedSettings.delivery_time || 25,
-            logo: fetchedSettings.logo || '/images/placeholder.png',
+            name: fetchedSettings.name || 'JD外卖',
+            logo: logoUrl,
           }));
         }
       } catch (error) {
@@ -48,7 +42,7 @@ const StoreHeader = () => {
 
   const getAvatarSrc = (user) => {
     if (user && user.avatar) {
-      return user.avatar.startsWith('http') ? user.avatar : `http://localhost:8090${user.avatar}`;
+      return user.avatar;
     }
     if (user && user.sex === '1') {
       return '/images/avatars/default_male.png';
@@ -71,13 +65,19 @@ const StoreHeader = () => {
       ></video>
 
       <div className="user-status-area">
-        {isAuthenticated ? (
+        {isLoading ? (
+          <span className="user-greeting">加载中...</span>
+        ) : isAuthenticated ? (
           <span className="user-greeting">欢迎 {user?.name || user?.phone}</span>
         ) : (
           <span className="user-greeting">请登录购餐</span>
         )}
-        <Link to={isAuthenticated ? '/profile' : '/login'} className="profile-circle-button">
-          <img src={getAvatarSrc(user)} alt="User Avatar" />
+        <Link to={isLoading ? '#' : (isAuthenticated ? '/profile' : '/login')} className="profile-circle-button">
+          {isLoading ? (
+            <div className="avatar-placeholder" /> 
+          ) : (
+            <img src={getAvatarSrc(user)} alt="User Avatar" />
+          )}
         </Link>
       </div>
 

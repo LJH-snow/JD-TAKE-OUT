@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import './FlavorSelectionModal.css';
 
+// 将常量移到组件外部，确保其引用稳定
+const MOCK_FLAVORS = [
+  { name: '辣度', options: ['不辣', '微辣', '中辣', '特辣'] },
+  { name: '忌口', options: ['不要葱', '不要蒜', '不要香菜'] },
+];
+
 const FlavorSelectionModal = ({ dish, isVisible, onClose, onAddToCart }) => {
   const [selections, setSelections] = useState({});
 
-  // 模拟的口味数据，当实际菜品没有 flavors 字段时使用
-  const MOCK_FLAVORS = [
-    { name: '辣度', options: ['不辣', '微辣', '中辣', '特辣'] },
-    { name: '忌口', options: ['不要葱', '不要蒜', '不要香菜'] },
-  ];
-
-  const flavors = dish?.flavors || MOCK_FLAVORS;
+  const flavors = dish?.flavors && dish.flavors.length > 0 ? dish.flavors : MOCK_FLAVORS;
 
   useEffect(() => {
     if (dish) {
@@ -22,7 +22,7 @@ const FlavorSelectionModal = ({ dish, isVisible, onClose, onAddToCart }) => {
         } else if (group.value) { // 处理真实API数据
           try {
             optionsList = JSON.parse(group.value.replace(/'/g, '"'));
-          } catch (e) { /* a */ }
+          } catch (e) { console.error("Failed to parse flavor value:", group.value, e); }
         }
         if (optionsList.length > 0) {
           defaultSelections[group.name] = optionsList[0];
@@ -53,12 +53,10 @@ const FlavorSelectionModal = ({ dish, isVisible, onClose, onAddToCart }) => {
         <div className="flavor-groups">
           {flavors.map(flavorGroup => {
             let optionsList = [];
-            // **关键修复：同时兼容 options 和 value 字段**
             if (flavorGroup.options) {
               optionsList = flavorGroup.options;
             } else if (flavorGroup.value) {
               try {
-                // 后端返回的可能是带单引号的字符串，先替换成双引号再解析
                 optionsList = JSON.parse(flavorGroup.value.replace(/'/g, '"'));
               } catch (e) {
                 console.error("Failed to parse flavor value:", flavorGroup.value, e);

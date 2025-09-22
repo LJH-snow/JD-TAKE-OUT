@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { App as AntApp } from 'antd';
 import LoginPage from './pages/LoginPage';
@@ -21,8 +21,39 @@ import AccountSecurityPage from './pages/AccountSecurityPage';
 import PrivacySettingsPage from './pages/PrivacySettingsPage';
 import AboutUsPage from './pages/AboutUsPage';
 import OrderSuccessPage from './pages/OrderSuccessPage';
+import DishDetailPage from './pages/DishDetailPage';
+import SetmealDetailPage from './pages/SetmealDetailPage';
+import { useAuth } from './context/AuthContext';
+import { getMe } from './api';
 
 function App() {
+  const { token, logout, login, setIsLoading } = useAuth();
+
+  useEffect(() => {
+    const fetchUserOnLoad = async () => {
+      // Only fetch if a token exists
+      if (token) {
+        try {
+          const response = await getMe();
+          if (response.data && response.data.code === 200) {
+            // Update user context with fresh data
+            login(response.data.data, token);
+          } else {
+            // If getMe fails (e.g., invalid token), log the user out
+            logout();
+          }
+        } catch (error) {
+          console.error("Failed to fetch user on app load, logging out.", error);
+          logout();
+        }
+      }
+      // In either case, we are done with the initial loading process
+      setIsLoading(false);
+    };
+
+    fetchUserOnLoad();
+  }, []); // Run only once on initial app load
+
   return (
     <AntApp>
       <Router>
@@ -30,6 +61,8 @@ function App() {
           <Route path="/" element={<StorePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/dishes/:id" element={<DishDetailPage />} />
+          <Route path="/setmeals/:id" element={<SetmealDetailPage />} />
 
           {/* 受保护的路由 */}
           <Route element={<ProtectedRoute />}>

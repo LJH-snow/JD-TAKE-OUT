@@ -49,7 +49,6 @@ const RegisterPage = () => {
           <div className="form-group gender-group">
             <label><input type="radio" name="sex" value="1" checked={sex === '1'} onChange={(e) => setSex(e.target.value)} /> 男</label>
             <label><input type="radio" name="sex" value="0" checked={sex === '0'} onChange={(e) => setSex(e.target.value)} /> 女</label>
-            <label><input type="radio" name="sex" value="" checked={sex === ''} onChange={(e) => setSex(e.target.value)} /> 保密</label>
           </div>
           <div className="form-group">
             <input type="password" placeholder="请输入密码" value={password} onChange={(e) => setPassword(e.target.value)} required />

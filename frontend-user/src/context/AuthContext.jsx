@@ -16,6 +16,8 @@ export const AuthProvider = ({ children }) => {
 
   const [token, setToken] = useState(() => localStorage.getItem('token'));
 
+  const [isLoading, setIsLoading] = useState(true);
+
   const login = (userData, authToken) => {
     setUser(userData);
     setToken(authToken);
@@ -42,6 +44,8 @@ export const AuthProvider = ({ children }) => {
     user,
     token,
     isAuthenticated: !!user,
+    isLoading, // 导出 loading 状态
+    setIsLoading, // 导出设置函数
     login,
     logout,
     updateUser, // 导出新函数

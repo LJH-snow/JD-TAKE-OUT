@@ -118,7 +118,7 @@ const StoreSettingsForm = ({ initialValues, onFormSubmit, onCancel }) => {
             uid: initialValues.logo, // Use URL as uid for uniqueness
             name: initialValues.logo.substring(initialValues.logo.lastIndexOf('/') + 1),
             status: 'done',
-            url: initialValues.logo.startsWith('http') ? initialValues.logo : `http://localhost:8090${initialValues.logo}`
+            url: initialValues.logo // Use the relative path directly
           }] : []}
         >
           <div>

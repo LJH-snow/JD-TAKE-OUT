@@ -59,8 +59,31 @@ export const getAllDishes = () => {
   return apiClient.get('/dishes');
 };
 
+/**
+ * 获取所有在售套餐
+ */
+export const getSetmeals = () => {
+  return apiClient.get('/setmeals');
+};
+
 export const getDishesByCategoryId = (categoryId) => {
   return apiClient.get(`/dishes?category_id=${categoryId}`);
+};
+
+/**
+ * 获取单个菜品详情
+ * @param {number} id
+ */
+export const getDishById = (id) => {
+  return apiClient.get(`/dishes/${id}`);
+};
+
+/**
+ * 获取单个套餐详情
+ * @param {number} id
+ */
+export const getSetmealById = (id) => {
+  return apiClient.get(`/setmeals/${id}`);
 };
 
 /**

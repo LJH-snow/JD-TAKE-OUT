@@ -3,6 +3,7 @@ package controllers
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"jd-take-out-backend/internal/models"
 
@@ -59,6 +60,11 @@ func (dc *DishController) ListDishes(c *gin.Context) {
 	var total int64
 
 	db := dc.DB.Model(&models.Dish{})
+
+	// 如果不是管理员或员工接口，则只查询在售商品
+	if !strings.HasPrefix(c.Request.URL.Path, "/api/v1/admin") && !strings.HasPrefix(c.Request.URL.Path, "/api/v1/employee") {
+		db = db.Where("status = ?", 1)
+	}
 
 	// 按名称模糊搜索
 	if name != "" {
@@ -157,7 +163,7 @@ func (dc *DishController) GetDishByID(c *gin.Context) {
 	}
 
 	var dish models.Dish
-	if err := dc.DB.Preload("Category").First(&dish, id).Error; err != nil {
+	if err := dc.DB.Preload("Category").Preload("DishFlavors").Where("status = ?", 1).First(&dish, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"code": 404, "message": "菜品未找到"})
 			return

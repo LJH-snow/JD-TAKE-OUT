@@ -6,8 +6,8 @@ import ShoppingCartDetails from '../components/ShoppingCartDetails';
 import FlavorSelectionModal from '../components/FlavorSelectionModal';
 import CategoryMenu from '../components/CategoryMenu';
 import DishList from '../components/DishList';
-import StoreClosedOverlay from '../components/StoreClosedOverlay'; // 引入浮层组件
-import { getCategories, getAllDishes, getShoppingCartItems, addShoppingCartItem, updateShoppingCartItem, removeShoppingCartItem, clearShoppingCart } from '../api';
+import StoreClosedOverlay from '../components/StoreClosedOverlay';
+import { getCategories, getAllDishes, getSetmeals, getShoppingCartItems, addShoppingCartItem, updateShoppingCartItem, removeShoppingCartItem, clearShoppingCart } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useStore } from '../context/StoreContext';
 import { useSmartScroll } from '../hooks/useSmartScroll';
@@ -52,19 +52,33 @@ const StorePage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [categoriesRes, dishesRes] = await Promise.all([getCategories(), getAllDishes()]);
+        // Fetch categories, dishes, and setmeals in parallel
+        const [categoriesRes, dishesRes, setmealsRes] = await Promise.all([
+          getCategories(), 
+          getAllDishes(),
+          getSetmeals()
+        ]);
+
         const fetchedCategories = categoriesRes.data.data || [];
         const allDishes = dishesRes.data?.data?.items || [];
-        const validDishes = allDishes.filter(dish => dish && dish.id && typeof dish.price === 'number' && !dish.delete_at);
-        const dishesByCategoryId = validDishes.reduce((acc, dish) => {
-          const categoryId = dish.category_id;
+        const allSetmeals = setmealsRes.data?.data?.items || [];
+
+        // Combine dishes and setmeals into a single list of items
+        const allItems = [...allDishes, ...allSetmeals];
+
+        const validItems = allItems.filter(item => item && item.id && typeof item.price === 'number' && !item.delete_at);
+        
+        const itemsByCategoryId = validItems.reduce((acc, item) => {
+          const categoryId = item.category_id;
           if (!acc[categoryId]) acc[categoryId] = [];
-          acc[categoryId].push(dish);
+          acc[categoryId].push(item);
           return acc;
         }, {});
+
         const newMenuData = fetchedCategories
-          .map(cat => ({ category: cat, dishes: dishesByCategoryId[cat.id] || [] }))
+          .map(cat => ({ category: cat, dishes: itemsByCategoryId[cat.id] || [] }))
           .filter(group => group.dishes.length > 0);
+
         const finalCategories = newMenuData.map(group => group.category);
         setCategories(finalCategories);
         setMenuData(newMenuData);
@@ -88,7 +102,7 @@ const StorePage = () => {
     return map;
   }, [cartItems]);
 
-  const handleAddToCart = async (dish, selectedFlavorsString = null) => {
+  const handleAddToCart = async (item, selectedFlavorsString = null) => {
     if (!isAuthenticated) {
       if (window.confirm('请先登录再购餐')) {
         navigate('/login');
@@ -97,11 +111,20 @@ const StorePage = () => {
     }
 
     try {
+      // 通过检查 item 是否有 setmeal_dishes 属性来判断是菜品还是套餐
+      const isSetmeal = item.setmeal_dishes && item.setmeal_dishes.length > 0;
+      
       const payload = {
-        dish_id: dish.id,
         number: 1,
         dish_flavor: selectedFlavorsString,
       };
+
+      if (isSetmeal) {
+        payload.setmeal_id = item.id;
+      } else {
+        payload.dish_id = item.id;
+      }
+
       const response = await addShoppingCartItem(payload);
       if (response.data && response.data.code === 200) {
         await fetchCartItems();

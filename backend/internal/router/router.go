@@ -71,6 +71,9 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 		api.GET("/menu", menuController.GetFullMenu)
 		api.GET("/categories", categoryController.ListCategories)
 		api.GET("/dishes", dishController.ListDishes)
+		api.GET("/dishes/:id", dishController.GetDishByID)
+		api.GET("/setmeals", setmealController.ListSetmeals)
+		api.GET("/setmeals/:id", setmealController.GetSetmealByID)
 
 		// 认证相关路由
 		auth := api.Group("/auth")
@@ -273,7 +276,7 @@ func SetupRouter(db *gorm.DB, cfg *config.Config) *gin.Engine {
 	}
 
 	// Serve static files from the uploads directory
-	r.Static("/uploads", ".//backend//uploads")
+	r.Static("/uploads", "backend/uploads")
 
 	r.GET("/ws", func(c *gin.Context) {
 		websocket.ServeWs(websocket.HubInstance, c.Writer, c.Request)

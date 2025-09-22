@@ -9,12 +9,7 @@ import MyOrdersCard from '../components/MyOrdersCard';
 import FeatureExpansionCard from '../components/FeatureExpansionCard';
 
 const UserProfilePage = () => {
-  const { user } = useAuth(); // 从全局 Context 获取用户数据
-
-  // 如果 Context 中没有 user 信息，可以显示加载中或重定向
-  if (!user) {
-    return <div className="user-profile-page-container">加载中...</div>;
-  }
+  const { user, isLoading } = useAuth(); // 从全局 Context 获取用户数据和加载状态
 
   return (
     <div className="user-profile-page-container">
@@ -30,8 +25,8 @@ const UserProfilePage = () => {
         </Link>
       </header>
 
-      {/* 用户信息卡片，直接传递来自 Context 的 user 对象 */}
-      <UserProfileCard user={user} />
+      {/* 用户信息卡片，传递 user 对象和加载状态 */}
+      <UserProfileCard user={user} isLoading={isLoading} />
 
       {/* 我的订单卡片 */}
       <MyOrdersCard />

@@ -4,6 +4,7 @@ import (
 	"jd-take-out-backend/internal/models"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -46,6 +47,11 @@ func (sc *SetmealController) ListSetmeals(c *gin.Context) {
 
 	db := sc.DB.Model(&models.Setmeal{})
 
+	// 如果不是管理员或员工接口，则只查询在售套餐
+	if !strings.HasPrefix(c.Request.URL.Path, "/api/v1/admin") && !strings.HasPrefix(c.Request.URL.Path, "/api/v1/employee") {
+		db = db.Where("status = ?", 1)
+	}
+
 	// 获取总数
 	if err := db.Count(&total).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "获取套餐总数失败"})
@@ -54,7 +60,7 @@ func (sc *SetmealController) ListSetmeals(c *gin.Context) {
 
 	// 获取分页数据
 	offset := (page - 1) * limit
-	err := sc.DB.Model(&models.Setmeal{}).Preload("Category").Preload("SetmealDishes").Order("id ASC").Offset(offset).Limit(limit).Find(&setmeals).Error
+	err := db.Preload("Category").Preload("SetmealDishes").Order("id ASC").Offset(offset).Limit(limit).Find(&setmeals).Error
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "message": "获取套餐列表失败"})
 		return

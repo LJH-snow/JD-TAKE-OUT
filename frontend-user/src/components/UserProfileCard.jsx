@@ -2,19 +2,30 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import './UserProfileCard.css';
 
-// 这是一个展示组件，接收用户信息作为 props
-const UserProfileCard = ({ user }) => {
+// 这是一个展示组件，接收用户信息和加载状态作为 props
+const UserProfileCard = ({ user, isLoading }) => {
+  // 在加载期间，显示一个占位符
+  if (isLoading) {
+    return (
+      <div className="user-profile-card loading">
+        <div className="profile-avatar placeholder" />
+        <div className="profile-info">
+          <p className="username placeholder">加载中...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
     return null; // 如果没有用户信息，则不渲染
   }
 
-  // 根据用户数据决定头像源的辅助函数
   const getAvatarSrc = (user) => {
-    // 如果用户有自定义头像，则拼接成完整URL
+    // 如果用户有自定义头像，直接使用其相对路径
     if (user.avatar) {
-      return user.avatar.startsWith('http') ? user.avatar : `http://localhost:8090${user.avatar}`;
+      return user.avatar;
     }
-    // 否则，根据性别使用默认头像
+    // 否则，根据性别使用默认头像的相对路径
     if (user.sex === '1') { // 假设 '1' 代表男性
       return '/images/avatars/default_male.png';
     }

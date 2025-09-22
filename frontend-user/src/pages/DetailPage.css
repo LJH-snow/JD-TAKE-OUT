@@ -1,0 +1,39 @@
+.detail-page-container {
+  padding: 24px;
+  background-color: #f0f2f5;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.detail-page-container.loading,
+.detail-page-container.error {
+    align-items: center;
+    font-size: 1.2rem;
+}
+
+.detail-card {
+  width: 100%;
+  max-width: 960px;
+  border-radius: 8px;
+}
+
+.price-line {
+  margin: 16px 0;
+}
+
+.price {
+  font-size: 2rem;
+  color: #fa541c;
+}
+
+.flavors-section {
+  margin-top: 24px;
+}
+
+.actions-section {
+  margin-top: 32px;
+  display: flex;
+  gap: 16px;
+}

@@ -26,9 +26,8 @@ const ProfileEditPage = () => {
       setSex(user.sex || '1');
 
       if (user.avatar) {
-        // Prepend backend base URL if the avatar URL is relative
-        const avatarUrl = user.avatar.startsWith('http') ? user.avatar : `http://localhost:8090${user.avatar}`;
-        setAvatarPreview(avatarUrl);
+        // Use the relative path directly. The proxy will handle it.
+        setAvatarPreview(user.avatar);
       } else if (user.sex === '1') {
         setAvatarPreview('/images/avatars/default_male.png');
       } else if (user.sex === '0') {

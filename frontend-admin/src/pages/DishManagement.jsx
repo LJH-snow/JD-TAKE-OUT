@@ -141,8 +141,7 @@ const DishManagement = () => {
             无图片
           </div>;
         }
-        // 将相对路径转换为完整URL
-        const imageUrl = text.startsWith('http') ? text : `http://localhost:8090${text}`;
+        const imageUrl = text; // Use relative path directly, proxy will handle it
         return <Image src={imageUrl} alt="菜品图片" width={60} height={60} style={{ objectFit: 'cover', borderRadius: '4px' }} />;
       },
     },

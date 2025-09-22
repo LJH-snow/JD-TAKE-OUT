@@ -96,3 +96,11 @@
   font-size: 16px;
   font-weight: 500;
 }
+
+.dish-item-link {
+  display: flex;
+  flex: 1;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0; /* Important for flexbox truncation */
+}
