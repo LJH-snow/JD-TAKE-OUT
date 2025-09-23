@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 	"strings"
@@ -33,9 +32,14 @@ type UserLoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
-// LoginRequest 登录请求结构 (用于判断类型)
-type LoginTypeRequest struct {
-	UserType string `json:"user_type"` // admin(管理员) 或 user(用户)
+// LoginRequest 登录请求结构 (用于Swaggo文档)
+// 为了兼容swaggo，我们将管理员和用户的登录字段合并到一个结构体中
+// user_type字段用于在后端区分登录类型
+type LoginRequest struct {
+	UserType string `json:"user_type" example:"user"`      // 登录类型, "admin" 或 "user"
+	Username string `json:"username,omitempty" example:"admin"` // 管理员登录时使用
+	Phone    string `json:"phone,omitempty" example:"13800138000"`  // 用户登录时使用
+	Password string `json:"password" binding:"required"`
 }
 
 // UserRegisterRequest 用户注册请求结构
@@ -57,81 +61,54 @@ type RegisterRequest struct {
 
 // Login 用户登录
 //
-//	@Summary		用户登录
-//	@Description	支持管理员和普通用户登录，返回JWT Token
+//	@Summary		用户与管理员统一登录接口
+//	@Description	支持管理员(username+password)和普通用户(phone+password)登录。user_type字段用于区分, "admin" 或 "user"。
 //	@Tags			认证
 //	@Accept			json
 //	@Produce		json
-//	@Param			body	body	LoginRequest	true	"登录请求参数"
-//	@Success		200	{object}	map[string]interface{}	"登录成功"
-//	@Failure		400	{object}	map[string]interface{}	"请求参数错误"
-//	@Failure		401	{object}	map[string]interface{}	"认证失败"
-//	@Failure		500	{object}	map[string]interface{}	"服务器错误"
-//	@Router			/api/v1/auth/login [post]
-// Login 用户登录
-//
-//	@Summary		用户登录
-//	@Description	支持管理员和普通用户登录，返回JWT Token
-//	@Tags			认证
-//	@Accept			json
-//	@Produce		json
-//	@Param			body	body	LoginTypeRequest	true	"登录请求参数(根据user_type区分)"
+//	@Param			body	body	LoginRequest	true	"统一登录请求参数"
 //	@Success		200	{object}	map[string]interface{}	"登录成功"
 //	@Failure		400	{object}	map[string]interface{}	"请求参数错误"
 //	@Failure		401	{object}	map[string]interface{}	"认证失败"
 //	@Failure		500	{object}	map[string]interface{}	"服务器错误"
 //	@Router			/api/v1/auth/login [post]
 func (ac *AuthController) Login(c *gin.Context) {
-	body, err := c.GetRawData()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "无法读取请求体"})
+	var req LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "请求参数错误: " + err.Error()})
 		return
 	}
 
-	// [DEBUG] 打印原始请求体
-	log.Printf("[Login Debug] Raw request body: %s", string(body))
-
-	// 恢复请求体，以便后续可能的再次读取（虽然在此逻辑中非必须，但属良好实践）
-	// c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
-
-	// 首先，判断登录类型
-	var typeReq LoginTypeRequest
-	if err := json.Unmarshal(body, &typeReq); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "无效的JSON格式"})
-		return
-	}
+	// [DEBUG] 打印解析后的请求体
+	log.Printf("[Login Debug] Parsed request: %+v", req)
 
 	// 默认为用户登录
-	if typeReq.UserType == "" {
-		typeReq.UserType = "user"
+	if req.UserType == "" {
+		req.UserType = "user"
 	}
 
-	if typeReq.UserType == "admin" {
+	if req.UserType == "admin" {
 		// 管理员登录
-		var req AdminLoginRequest
-		if err := json.Unmarshal(body, &req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "管理员登录参数JSON解析失败: " + err.Error()})
+		if req.Username == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "管理员登录需要用户名(username)"})
 			return
 		}
-		// 手动验证
-		if req.Username == "" || req.Password == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "管理员登录需要用户名和密码"})
-			return
+		adminReq := AdminLoginRequest{
+			Username: req.Username,
+			Password: req.Password,
 		}
-		ac.adminLogin(c, req)
+		ac.adminLogin(c, adminReq)
 	} else {
 		// 用户登录
-		var req UserLoginRequest
-		if err := json.Unmarshal(body, &req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "用户登录参数JSON解析失败: " + err.Error()})
+		if req.Phone == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "用户登录需要手机号(phone)"})
 			return
 		}
-		// 手动验证
-		if req.Phone == "" || req.Password == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"code": 400, "message": "用户登录需要手机号和密码"})
-			return
+		userReq := UserLoginRequest{
+			Phone:    req.Phone,
+			Password: req.Password,
 		}
-		ac.userLogin(c, req)
+		ac.userLogin(c, userReq)
 	}
 }
 

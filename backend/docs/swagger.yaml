@@ -1,18 +1,312 @@
 definitions:
+  controllers.AddAddressBookRequest:
+    properties:
+      city_code:
+        type: string
+      city_name:
+        type: string
+      consignee:
+        type: string
+      detail:
+        type: string
+      district_code:
+        type: string
+      district_name:
+        type: string
+      formatted_address:
+        type: string
+      is_default:
+        description: 0:非默认 1:默认
+        type: integer
+      label:
+        type: string
+      latitude:
+        type: number
+      longitude:
+        type: number
+      phone:
+        type: string
+      province_code:
+        type: string
+      province_name:
+        type: string
+      sex:
+        description: 0:女 1:男
+        enum:
+        - "0"
+        - "1"
+        type: string
+    required:
+    - consignee
+    - detail
+    - phone
+    - sex
+    type: object
+  controllers.AddShoppingCartRequest:
+    properties:
+      dish_flavor:
+        type: string
+      dish_id:
+        type: integer
+      number:
+        description: 默认为1
+        type: integer
+      setmeal_id:
+        type: integer
+    type: object
+  controllers.CategoryRequest:
+    properties:
+      name:
+        type: string
+      sort:
+        minimum: 0
+        type: integer
+      status:
+        enum:
+        - 0
+        - 1
+        type: integer
+      type:
+        description: 1:菜品分类 2:套餐分类
+        enum:
+        - 1
+        - 2
+        type: integer
+    required:
+    - name
+    - type
+    type: object
+  controllers.CreateDishRequest:
+    properties:
+      category_id:
+        type: integer
+      description:
+        type: string
+      image:
+        type: string
+      name:
+        type: string
+      price:
+        minimum: 0
+        type: number
+      status:
+        description: 0:停售 1:起售
+        enum:
+        - 0
+        - 1
+        type: integer
+    required:
+    - category_id
+    - name
+    - price
+    type: object
+  controllers.CreateEmployeeRequest:
+    properties:
+      id_number:
+        type: string
+      name:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      phone:
+        type: string
+      sex:
+        enum:
+        - "0"
+        - "1"
+        type: string
+      status:
+        enum:
+        - 0
+        - 1
+        type: integer
+      username:
+        type: string
+    required:
+    - id_number
+    - name
+    - password
+    - phone
+    - sex
+    - username
+    type: object
   controllers.LoginRequest:
     properties:
       password:
         type: string
+      phone:
+        description: 用户登录时使用
+        example: "13800138000"
+        type: string
       user_type:
-        description: admin(管理员) 或 user(用户)
+        description: 登录类型, "admin" 或 "user"
+        example: user
         type: string
       username:
+        description: 管理员登录时使用
+        example: admin
         type: string
     required:
     - password
-    - username
     type: object
-  controllers.RegisterRequest:
+  controllers.SetmealRequest:
+    properties:
+      category_id:
+        type: integer
+      description:
+        type: string
+      dish_ids:
+        description: 套餐包含的菜品ID列表
+        items:
+          type: integer
+        minItems: 1
+        type: array
+      image:
+        type: string
+      name:
+        type: string
+      price:
+        minimum: 0
+        type: number
+      status:
+        enum:
+        - 0
+        - 1
+        type: integer
+    required:
+    - category_id
+    - dish_ids
+    - name
+    - price
+    type: object
+  controllers.UpdateAddressBookRequest:
+    properties:
+      city_code:
+        type: string
+      city_name:
+        type: string
+      consignee:
+        type: string
+      detail:
+        type: string
+      district_code:
+        type: string
+      district_name:
+        type: string
+      formatted_address:
+        type: string
+      is_default:
+        description: 0:非默认 1:默认
+        type: integer
+      label:
+        type: string
+      latitude:
+        type: number
+      longitude:
+        type: number
+      phone:
+        type: string
+      province_code:
+        type: string
+      province_name:
+        type: string
+      sex:
+        description: 0:女 1:男
+        enum:
+        - "0"
+        - "1"
+        type: string
+    required:
+    - consignee
+    - detail
+    - phone
+    - sex
+    type: object
+  controllers.UpdateDishRequest:
+    properties:
+      category_id:
+        type: integer
+      description:
+        type: string
+      image:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+      status:
+        enum:
+        - 0
+        - 1
+        type: integer
+    type: object
+  controllers.UpdateEmployeeRequest:
+    properties:
+      id_number:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      phone:
+        type: string
+      sex:
+        enum:
+        - "0"
+        - "1"
+        type: string
+      status:
+        enum:
+        - 0
+        - 1
+        type: integer
+      username:
+        description: 用户名不允许修改
+        type: string
+    type: object
+  controllers.UpdateSettingRequest:
+    properties:
+      address:
+        type: string
+      description:
+        type: string
+      is_open:
+        type: boolean
+      logo:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+    required:
+    - name
+    type: object
+  controllers.UpdateShoppingCartRequest:
+    properties:
+      id:
+        type: integer
+      number:
+        type: integer
+    required:
+    - id
+    - number
+    type: object
+  controllers.UpdateUserRequest:
+    properties:
+      is_active:
+        type: boolean
+      name:
+        type: string
+      phone:
+        type: string
+      sex:
+        enum:
+        - "0"
+        - "1"
+        type: string
+    type: object
+  controllers.UserRegisterRequest:
     properties:
       email:
         type: string
@@ -22,13 +316,10 @@ definitions:
         type: string
       phone:
         type: string
-      username:
-        type: string
     required:
     - name
     - password
     - phone
-    - username
     type: object
 host: localhost:8090
 info:
@@ -41,137 +332,15 @@ info:
   title: JD外卖系统API
   version: "1.0"
 paths:
-  /api/v1/admin/dashboard/overview:
+  /api/v1/admin/categories:
     get:
       consumes:
       - application/json
-      description: 获取当日营业数据概览，包括营业额、订单量、完成率等关键指标
+      description: 根据类型获取所有菜品或套餐的分类列表
       parameters:
-      - default: 当前日期
-        description: '开始日期 (格式: 2006-01-02)'
+      - description: 分类类型 (1:菜品分类, 2:套餐分类)
         in: query
-        name: start
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 成功响应
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: 未授权
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: 服务器错误
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: 获取工作台概览数据
-      tags:
-      - 统计
-  /api/v1/admin/export/data:
-    post:
-      consumes:
-      - application/json
-      description: 导出系统数据为Excel文件
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 成功响应
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: 未授权
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: 服务器错误
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: 导出数据
-      tags:
-      - 统计
-  /api/v1/admin/stats/categories:
-    get:
-      consumes:
-      - application/json
-      description: 获取指定时间范围内的菜品分类销售统计，包括营业额、销量、占比等
-      parameters:
-      - description: '开始日期 (格式: 2006-01-02)'
-        in: query
-        name: start
-        required: true
-        type: string
-      - description: '结束日期 (格式: 2006-01-02)'
-        in: query
-        name: end
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 成功响应
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: 参数错误
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: 未授权
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: 服务器错误
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: 获取分类统计数据
-      tags:
-      - 统计
-  /api/v1/admin/stats/dishes:
-    get:
-      consumes:
-      - application/json
-      description: 获取指定时间范围内的菜品销售排行，支持按分类过滤
-      parameters:
-      - description: '开始日期 (格式: 2006-01-02)'
-        in: query
-        name: start
-        required: true
-        type: string
-      - description: '结束日期 (格式: 2006-01-02)'
-        in: query
-        name: end
-        required: true
-        type: string
-      - default: all
-        description: '分类名称 (默认: all)'
-        in: query
-        name: category
-        type: string
-      - default: 10
-        description: '返回数量 (默认: 10)'
-        in: query
-        name: limit
+        name: type
         type: integer
       produces:
       - application/json
@@ -181,11 +350,6 @@ paths:
           schema:
             additionalProperties: true
             type: object
-        "400":
-          description: 参数错误
-          schema:
-            additionalProperties: true
-            type: object
         "401":
           description: 未授权
           schema:
@@ -198,24 +362,127 @@ paths:
             type: object
       security:
       - BearerAuth: []
-      summary: 获取菜品排行数据
+      summary: 获取分类列表
       tags:
-      - 统计
-  /api/v1/admin/stats/sales:
+      - 分类管理
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的菜品或套餐分类
+      parameters:
+      - description: 分类信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.CategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 创建成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 新增分类
+      tags:
+      - 分类管理
+  /api/v1/admin/categories/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 根据ID删除指定分类
+      parameters:
+      - description: 分类ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: 删除成功
+        "404":
+          description: 记录未找到
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 删除分类
+      tags:
+      - 分类管理
+    put:
+      consumes:
+      - application/json
+      description: 更新指定ID的分类信息
+      parameters:
+      - description: 分类ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 要更新的分类信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.CategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 记录未找到
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 更新分类
+      tags:
+      - 分类管理
+  /api/v1/admin/dishes:
     get:
       consumes:
       - application/json
-      description: 获取指定时间范围内的销售趋势数据，包括日均营业额、订单量、客户数等
+      description: 根据分页参数和可选的筛选条件获取菜品列表
       parameters:
-      - description: '开始日期 (格式: 2006-01-02)'
+      - default: 1
+        description: 页码
         in: query
-        name: start
-        required: true
-        type: string
-      - description: '结束日期 (格式: 2006-01-02)'
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
         in: query
-        name: end
-        required: true
+        name: limit
+        type: integer
+      - description: 菜品名称 (用于模糊搜索)
+        in: query
+        name: name
         type: string
       produces:
       - application/json
@@ -225,6 +492,40 @@ paths:
           schema:
             additionalProperties: true
             type: object
+        "401":
+          description: 未授权
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取菜品分页列表
+      tags:
+      - 菜品管理
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的菜品
+      parameters:
+      - description: 菜品信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.CreateDishRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 创建成功
+          schema:
+            additionalProperties: true
+            type: object
         "400":
           description: 参数错误
           schema:
@@ -242,16 +543,536 @@ paths:
             type: object
       security:
       - BearerAuth: []
-      summary: 获取销售趋势数据
+      summary: 新增菜品
       tags:
-      - 统计
+      - 菜品管理
+  /api/v1/admin/dishes/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 根据ID删除指定菜品
+      parameters:
+      - description: 菜品ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: 删除成功
+        "404":
+          description: 记录未找到
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 删除菜品
+      tags:
+      - 菜品管理
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取单个菜品的详细信息
+      parameters:
+      - description: 菜品ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 记录未找到
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取菜品详情
+      tags:
+      - 菜品管理
+    put:
+      consumes:
+      - application/json
+      description: 更新指定ID的菜品信息
+      parameters:
+      - description: 菜品ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 要更新的菜品信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.UpdateDishRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 记录未找到
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 更新菜品信息
+      tags:
+      - 菜品管理
+  /api/v1/admin/employees:
+    get:
+      consumes:
+      - application/json
+      description: 根据分页和筛选条件获取员工列表
+      parameters:
+      - description: 页码
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 员工姓名
+        in: query
+        name: name
+        type: string
+      - description: 用户名
+        in: query
+        name: username
+        type: string
+      - description: 手机号
+        in: query
+        name: phone
+        type: string
+      - description: 状态 (0:禁用, 1:启用)
+        in: query
+        name: status
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取员工分页列表
+      tags:
+      - 员工管理
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的员工账号
+      parameters:
+      - description: 员工信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.CreateEmployeeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 创建成功
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 新增员工
+      tags:
+      - 员工管理
+  /api/v1/admin/employees/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 根据ID删除指定员工
+      parameters:
+      - description: 员工ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: 删除成功
+      security:
+      - BearerAuth: []
+      summary: 删除员工
+      tags:
+      - 员工管理
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取单个员工的详细信息
+      parameters:
+      - description: 员工ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取员工详情
+      tags:
+      - 员工管理
+    put:
+      consumes:
+      - application/json
+      description: 更新指定ID的员工信息
+      parameters:
+      - description: 员工ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 要更新的员工信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.UpdateEmployeeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 更新员工信息
+      tags:
+      - 员工管理
+  /api/v1/admin/me:
+    get:
+      consumes:
+      - application/json
+      description: 根据提供的JWT令牌获取当前登录用户（管理员）的信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 认证失败
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: 权限不足
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取当前用户信息
+      tags:
+      - 认证
+  /api/v1/admin/setmeals:
+    get:
+      consumes:
+      - application/json
+      description: 获取所有套餐的列表，支持分页
+      parameters:
+      - description: 页码
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取套餐分页列表
+      tags:
+      - 套餐管理
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的套餐，并关联菜品
+      parameters:
+      - description: 套餐信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.SetmealRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 创建成功
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 新增套餐
+      tags:
+      - 套餐管理
+  /api/v1/admin/setmeals/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 根据ID删除指定套餐及其关联的菜品
+      parameters:
+      - description: 套餐ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: 删除成功
+      security:
+      - BearerAuth: []
+      summary: 删除套餐
+      tags:
+      - 套餐管理
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取单个套餐的详细信息，包括关联的菜品
+      parameters:
+      - description: 套餐ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取套餐详情
+      tags:
+      - 套餐管理
+    put:
+      consumes:
+      - application/json
+      description: 更新指定ID的套餐信息，并重新设置关联的菜品
+      parameters:
+      - description: 套餐ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 要更新的套餐信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.SetmealRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 更新套餐信息
+      tags:
+      - 套餐管理
+  /api/v1/admin/settings:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前店铺的配置信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取店铺设置
+      tags:
+      - 店铺设置
+    put:
+      consumes:
+      - application/json
+      description: 更新当前店铺的配置信息，如果不存在则创建
+      parameters:
+      - description: 店铺设置信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.UpdateSettingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 更新店铺设置
+      tags:
+      - 店铺设置
+  /api/v1/admin/users:
+    get:
+      consumes:
+      - application/json
+      description: 根据分页和筛选条件获取用户列表
+      parameters:
+      - description: 页码
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 用户姓名
+        in: query
+        name: name
+        type: string
+      - description: 手机号
+        in: query
+        name: phone
+        type: string
+      - description: 是否激活 (true/false)
+        in: query
+        name: is_active
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取用户分页列表
+      tags:
+      - 用户管理
+  /api/v1/admin/users/{id}:
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取单个用户的详细信息
+      parameters:
+      - description: 用户ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功响应
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取用户详情
+      tags:
+      - 用户管理
+    put:
+      consumes:
+      - application/json
+      description: 更新指定ID的用户信息，包括激活状态
+      parameters:
+      - description: 用户ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 要更新的用户信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 更新用户信息
+      tags:
+      - 用户管理
   /api/v1/auth/login:
     post:
       consumes:
       - application/json
-      description: 支持管理员和普通用户登录，返回JWT Token
+      description: 支持管理员(username+password)和普通用户(phone+password)登录。user_type字段用于区分,
+        "admin" 或 "user"。
       parameters:
-      - description: 登录请求参数
+      - description: 统一登录请求参数
         in: body
         name: body
         required: true
@@ -280,7 +1101,7 @@ paths:
           schema:
             additionalProperties: true
             type: object
-      summary: 用户登录
+      summary: 用户与管理员统一登录接口
       tags:
       - 认证
   /api/v1/auth/refresh:
@@ -322,7 +1143,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/controllers.RegisterRequest'
+          $ref: '#/definitions/controllers.UserRegisterRequest'
       produces:
       - application/json
       responses:
@@ -349,6 +1170,529 @@ paths:
       summary: 用户注册
       tags:
       - 认证
+  /api/v1/employee/stats/orders/today:
+    get:
+      consumes:
+      - application/json
+      description: 获取今日订单数量、状态分布和完成率等基础统计信息，供员工查看
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 统计成功
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 认证失败
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: 权限不足
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取今日订单统计
+      tags:
+      - 员工统计
+  /api/v1/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 上传单个文件到服务器
+      parameters:
+      - description: 上传的文件
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 上传成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求错误
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 文件上传
+      tags:
+      - 文件
+  /api/v1/user/addressBook:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前用户的所有地址簿记录
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 用户未认证
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取地址簿列表
+      tags:
+      - 地址簿
+    post:
+      consumes:
+      - application/json
+      description: 为当前用户添加新的地址簿记录
+      parameters:
+      - description: 添加地址簿请求参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.AddAddressBookRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 添加成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 用户未认证
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 添加地址簿记录
+      tags:
+      - 地址簿
+  /api/v1/user/addressBook/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除当前用户的地址簿记录
+      parameters:
+      - description: 地址簿ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 无效的ID格式
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 用户未认证
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 地址簿记录不存在
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 删除地址簿记录
+      tags:
+      - 地址簿
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取当前用户的单个地址簿记录
+      parameters:
+      - description: 地址簿ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 无效的ID格式
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 用户未认证
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 地址簿记录不存在
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取单个地址簿记录
+      tags:
+      - 地址簿
+    put:
+      consumes:
+      - application/json
+      description: 更新当前用户的地址簿记录
+      parameters:
+      - description: 地址簿ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 更新地址簿请求参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.UpdateAddressBookRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 用户未认证
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 地址簿记录不存在
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 更新地址簿记录
+      tags:
+      - 地址簿
+  /api/v1/user/addressBook/default/{id}:
+    put:
+      consumes:
+      - application/json
+      description: 将指定地址设置为当前用户的默认地址
+      parameters:
+      - description: 地址簿ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 设置成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 无效的ID格式
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 用户未认证
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 地址簿记录不存在
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 设置默认地址
+      tags:
+      - 地址簿
+  /api/v1/user/me:
+    get:
+      consumes:
+      - application/json
+      description: 根据提供的JWT令牌获取当前登录用户的信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 认证失败
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: 权限不足
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取当前用户信息 (用户端)
+      tags:
+      - 认证
+  /api/v1/user/shoppingCart:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前用户的购物车列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 用户未认证
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取购物车内容
+      tags:
+      - 购物车
+    post:
+      consumes:
+      - application/json
+      description: 添加菜品或套餐到用户的购物车
+      parameters:
+      - description: 添加购物车请求参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.AddShoppingCartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 添加成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 商品不存在
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 添加商品到购物车
+      tags:
+      - 购物车
+    put:
+      consumes:
+      - application/json
+      description: 更新购物车中指定商品的数量
+      parameters:
+      - description: 更新购物车请求参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.UpdateShoppingCartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 用户未认证
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 购物车商品不存在
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 更新购物车商品数量
+      tags:
+      - 购物车
+  /api/v1/user/shoppingCart/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 从购物车中移除指定商品
+      parameters:
+      - description: 购物车商品ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 移除成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 用户未认证
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 购物车商品不存在
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 移除购物车商品
+      tags:
+      - 购物车
+  /api/v1/user/shoppingCart/clear:
+    delete:
+      consumes:
+      - application/json
+      description: 清空当前用户的所有购物车商品
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 清空成功
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 用户未认证
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 清空购物车
+      tags:
+      - 购物车
   /health:
     get:
       consumes:
